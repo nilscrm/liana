@@ -1,0 +1,26 @@
+mod simplex = "./simplex.vi";
+
+use simplex::Tableau;
+
+pub fn main(&io: &IO) {
+  // Example: Maximize 3x + 4y
+  //          Subject to:
+  //          x + 2y <= 8
+  //          3x + 2y <= 12
+  //          x, y >= 0
+  let c = [3.0, 4.0];
+  let a = [[1.0, 2.0],
+          [3.0, 2.0]];
+  let b = [8.0, 12.0];
+  let lp = Tableau::new(a, b, c);
+
+  match lp.solve() {
+    Ok((sol_value, sol)) {
+      io.println("Solution value: {sol_value}");
+      io.println("Solution: {sol}");
+    }
+    Err(msg) {
+      io.println("Can't find a solution to the linear program: {msg}");
+    }
+  }
+}

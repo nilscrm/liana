@@ -8,8 +8,6 @@ struct Tableau {
   matrix: Vec<Vec<f64>>,
   /// Number of original variables (excluding slack/surplus variables)
   num_original_vars: usize,
-  /// Total number of variables (including slack/surplus variables)
-  num_total_vars: usize,
   /// Maps the basic variable indices to their row indices in the tableau
   basic_vars: Vec<usize>,
 }
@@ -104,12 +102,7 @@ impl Tableau {
     // Initialize basic variables (initially the slack variables)
     let basic_vars = (num_vars..(num_vars + num_constraints)).collect();
 
-    Ok(Tableau {
-      matrix,
-      num_original_vars: num_vars,
-      num_total_vars: num_vars + num_constraints,
-      basic_vars,
-    })
+    Ok(Tableau { matrix, num_original_vars: num_vars, basic_vars })
   }
 
   /// Find the entering variable index using the most negative coefficient rule
@@ -196,14 +189,20 @@ impl Tableau {
         None => break, // Optimal solution found
       };
 
+      println!("entering_var: {entering_var}");
+
       // Find the leaving variable
       let leaving_row = match self.find_leaving_var(entering_var) {
         Some(row) => row,
         None => return Err("Problem is unbounded"),
       };
 
+      println!("leaving_row: {leaving_row}");
+
       // Perform the pivot
       self.pivot(leaving_row, entering_var);
+
+      println!("{}", self);
     }
 
     // Extract the solution

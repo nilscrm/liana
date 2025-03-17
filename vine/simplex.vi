@@ -1,0 +1,193 @@
+use std::unicode::ToString;
+
+/// Represents a linear programming problem in tableau form
+struct Tableau(
+  // List of rows
+  // First row is the objective row
+  List[List[F32]],
+  // Right hand side
+  List[F32],
+  /// Number of original variables (excluding slack variables)
+  N32,
+  /// Maps the basic variable indices to their row indices in the tableau
+  List[N32],
+)
+
+pub mod Tableau {
+  /// Create a new tableau for a standard form linear programming problem:
+  /// Maximize z = c^T x
+  /// Subject to Ax <= b
+  ///            x >= 0
+  ///
+  /// # Arguments
+  /// * `a` - The constraint coefficients matrix (list of rows)
+  /// * `b` - The constraint right-hand sides
+  /// * `c` - The objective function coefficients
+  pub fn new(a: List[List[F32]], b: List[F32], c: List[F32]) -> Tableau {
+    let num_constraints = a.len();
+    let num_original_vars = c.len();
+
+    // Add slack variables
+    let a_iter = a.iter();
+    let i = 0;
+    while a_iter.next() is Some(&row) {
+      let j = 0;
+      while j < num_constraints {
+        if j == i {
+          row.push_back(1.0);
+        } else {
+          row.push_back(0.0);
+        }
+        j += 1;
+      }
+      i += 1;
+    }
+
+    // Invert cost coefficients
+    c = c.map(fn(x: F32) { -x });
+    // Add slack variables to cost row
+    let i = 0;
+    while i < num_constraints {
+      c.push_back(0.0);
+      i += 1;
+    }
+    a.push_front(c);
+
+    // Add dummy rhs value for cost row
+    b.push_front(0.0);
+
+    let basic_vars = [];
+    let i = 0;
+    while i < num_constraints {
+      basic_vars.push_back(num_original_vars + i);
+      i += 1;
+    }
+
+    Tableau(a, b, num_original_vars, basic_vars)
+  }
+
+  /// Find the entering variable index using the most negative coefficient rule
+  pub fn .find_entering_var(&Tableau(matrix, _, _, _)) -> Option[N32] {
+    let &cost_row = matrix.get(0);
+
+    let min_coeff = 0.0;
+    let entering_var = None;
+
+    let cost_iter = cost_row.iter();
+    let column_index = 0;
+    while cost_iter.next() is Some(&obj_coef) {
+      if obj_coef < min_coeff {
+        min_coeff = obj_coef;
+        entering_var = Some(column_index);
+      }
+      column_index += 1;
+    }
+
+    entering_var
+  }
+
+  /// Find the leaving variable index using the minimum ratio test
+  pub fn .find_leaving_var(&Tableau(matrix, rhs, _, _), entering_var: N32) -> Option[N32] {
+    let rhs_iter = rhs.iter();
+    let a_iter = matrix.iter();
+
+    // Skip objective row
+    let &_ = a_iter.next().unwrap();
+    let &_ = rhs_iter.next().unwrap();
+    let row_index = 1;
+
+    let min_ratio = 999999.0;
+    let leaving_row = None;
+
+    while a_iter.next() is Some(&row) {
+      let &coef = row.get(entering_var);
+      let &rhs_val = rhs_iter.next().unwrap();
+      if coef > 0.0 && (rhs_val / coef) < min_ratio {
+        min_ratio = rhs_val / coef;
+        leaving_row = Some(row_index);
+      }
+      row_index += 1;
+    }
+
+    leaving_row
+  }
+
+  /// Perform a pivot operation
+  pub fn .pivot(&Tableau(matrix, rhs, _, basic_vars), leaving_row_index: N32, entering_var: N32) {
+    let &leaving_row = matrix.get(leaving_row_index);
+    let &leaving_row_rhs = rhs.get(leaving_row_index);
+
+    let &pivot_element = leaving_row.get(entering_var);
+
+    let leaving_row_iter = leaving_row.iter();
+    while leaving_row_iter.next() is Some(&val) {
+      val /= pivot_element;
+    }
+    leaving_row_rhs /= pivot_element;
+
+    let a_iter = matrix.iter();
+    let rhs_iter = rhs.iter();
+    let row_index = 0;
+    while a_iter.next() is Some(&row) {
+      let &rhs_val = rhs_iter.next().unwrap();
+      if row_index != leaving_row_index {
+        let &scaling_factor = row.get(entering_var);
+        let row_iter = row.iter();
+        let leaving_row_iter = leaving_row.iter();
+        while row_iter.next() is Some(&val) {
+          let &leaving_val = leaving_row_iter.next().unwrap();
+          val -= scaling_factor * leaving_val;
+        }
+        rhs_val -= scaling_factor * leaving_row_rhs;
+      }
+      row_index += 1;
+    }
+
+    let &basic_var_leaving = basic_vars.get(leaving_row_index);
+    basic_var_leaving = entering_var;
+  }
+
+  /// Run the simplex method to solve the linear program
+  pub fn .solve(&self: &Tableau) -> Result[(F32, List[F32]), String] {
+    loop {
+      let entering_var = match self.find_entering_var() {
+        Some(var) { var }
+        None { break; 0 }
+      };
+
+      let leaving_var = match self.find_leaving_var(entering_var) {
+        Some(var) { var }
+        None { return Err("Unbounded"); 0 }
+      };
+
+      self.pivot(leaving_var, entering_var);
+    }
+
+    Ok(self.extract_solution())
+  }
+
+  fn .extract_solution(&Tableau(matrix, rhs, num_vars, basic_vars)) -> (F32, List[F32]) {
+    // Solution value can be obtained from the right hand side of the objective row
+    let rhs_iter = rhs.iter();
+    let &sol_value = rhs_iter.next().unwrap();
+
+    let solution = List::new(num_vars, 0.0);
+    let basic_vars_iter = basic_vars.iter();
+    while basic_vars_iter.next() is Some(&basic_var) {
+      let &val = rhs_iter.next().unwrap();
+      let &sol_place = solution.get(basic_var - 1);
+      sol_place = val;
+    }
+
+    (sol_value, solution)
+  }
+
+  // IMPORTANT: On the current main branch of Vine printing a list of lists (e.g. matrix) does not work.
+  // See https://discord.com/channels/1246152587883970662/1246156450875707556/1350791814210388039 for how to hotfix
+  // this in the Vine std.
+  pub impl to_string: ToString[Tableau] {
+    fn .to_string(Tableau(matrix, rhs, num_vars, basis)) -> String {
+      "A: {matrix}\n= {rhs}\nNum vars: {num_vars}\nBasis: {basis}"
+    }
+  }
+}
