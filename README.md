@@ -4,14 +4,15 @@ Liana is a linear program solver written in Vine. It uses the simplex method to 
 
 ## Example
 Solve the linear program
-$$
+```math
 \begin{align*}
 \text{Maximize} \quad & 3x + 4y \\
 \text{subject to} \quad & x + 2y \leq 8 \\
 & 3x + 2y \leq 12 \\
 & x, y \geq 0
 \end{align*}
-$$
+```
+
 ```rust
 let cost_coefficients = [3.0, 4.0];
 let a = [[1.0, 2.0],
