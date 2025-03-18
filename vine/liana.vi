@@ -1,0 +1,4 @@
+pub mod linear_program = "./linear_program.vi";
+pub mod terms = "./terms.vi";
+pub mod constraint = "./constraint.vi";
+pub mod simplex = "./simplex.vi";

@@ -1,0 +1,259 @@
+use std::ops::arithmetic::{Add, Sub, Mul};
+use std::ops::Cast;
+use std::unicode::ToString;
+use std::data::Map;
+
+pub struct Var {
+  id: N32,
+  name: String,
+}
+
+pub struct Term {
+  coefficients: Map[N32, F32],
+  constant: F32,
+  var_names: Map[N32, String],
+}
+
+pub mod Var {
+  pub impl toTerm: Cast[Var, Term] {
+    fn .cast(Var({id, name})) -> Term {
+      let coefficients = Map::empty[N32, F32];
+      coefficients.insert(id, 1.0);
+      let var_names = Map::empty[N32, String];
+      var_names.insert(id, name);
+      Term({
+        coefficients: coefficients,
+        constant: 0.0,
+        var_names: var_names,
+      })
+    }
+  }
+
+  pub impl toString: ToString[Var] {
+    fn .to_string(Var({id, name})) -> String {
+      name
+    }
+  }
+
+  pub impl add_var_var: Add[Var, Var, Term] {
+    fn .add(t1: Var, t2: Var) -> Term {
+      t1 as Term + t2 as Term
+    }
+  }
+
+  pub impl add_var_f32: Add[Var, F32, Term] {
+    fn .add(v: Var, f: F32) -> Term {
+      v as Term + f as Term
+    }
+  }
+
+  pub impl add_f32_var: Add[F32, Var, Term] {
+    fn .add(f: F32, v: Var) -> Term {
+      f as Term + v as Term
+    }
+  }
+
+  pub impl sub_var_var: Sub[Var, Var, Term] {
+    fn .sub(t1: Var, t2: Var) -> Term {
+      t1 as Term - t2 as Term
+    }
+  }
+
+  pub impl sub_var_f32: Sub[Var, F32, Term] {
+    fn .sub(v: Var, f: F32) -> Term {
+      v as Term - f as Term
+    }
+  }
+
+  pub impl sub_f32_var: Sub[F32, Var, Term] {
+    fn .sub(f: F32, v: Var) -> Term {
+      f as Term - v as Term
+    }
+  }
+
+  pub impl mul_var_f32: Mul[Var, F32, Term] {
+    fn .mul(v: Var, f: F32) -> Term {
+      v as Term * f
+    }
+  }
+
+  pub impl mul_f32_var: Mul[F32, Var, Term] {
+    fn .mul(f: F32, v: Var) -> Term {
+      f * v as Term
+    }
+  }
+}
+
+pub mod Term {
+  pub impl fromF32: Cast[F32, Term] {
+    fn .cast(f: F32) -> Term {
+      Term({
+        coefficients: Map::empty[N32, F32],
+        constant: f,
+        var_names: Map::empty[N32, String],
+      })
+    }
+  }
+
+  pub impl fromN32: Cast[N32, Term] {
+    fn .cast(n: N32) -> Term {
+      n.as[F32].as[Term]
+    }
+  }
+
+  pub impl toString: ToString[Term] {
+    fn .to_string(Term({coefficients, constant, var_names})) -> String {
+      let s = "";
+      let coefficients_iter = coefficients.into_iter();
+      while coefficients_iter.next() is Some((id, coef)) {
+        let fallback_name = "x_{id}";
+        let &var_name = var_names.get(&id).unwrap_or(&fallback_name);
+        s ++= "{coef}*{var_name} ";
+      }
+      s ++= "{constant}";
+      s
+    }
+  }
+
+  pub fn .to_matrix_row(Term({coefficients, constant, var_names}), num_vars: N32) -> (List[F32], F32) {
+    let coef_iter = coefficients.into_iter();
+    let next_var = coef_iter.next();
+    let var_index = 0;
+    let row = [];
+    while var_index < num_vars {
+      match next_var {
+        Some((id, coef)) {
+          if id == var_index {
+            row.push_back(coef);
+            next_var = coef_iter.next();
+          } else {
+            row.push_back(0.0);
+          }
+        }
+        None {
+          row.push_back(0.0);
+        }
+      }
+      var_index += 1;
+    }
+    (row, -constant)
+  }
+
+  pub impl add_term_term: Add[Term, Term, Term] {
+    fn .add(Term({coefficients: c1, constant: k1, var_names: v1}), Term({coefficients: c2, constant: k2, var_names: v2})) -> Term {
+      let c2_iter = c2.into_iter();
+      while c2_iter.next() is Some((id, coef)) {
+        match c1.get(&id) {
+          Some(&c1_coef) {
+            c1_coef += coef;
+          }
+          None {
+            c1.insert(id, coef);
+          }
+        }
+      }
+      let v2_iter = v2.into_iter();
+      while v2_iter.next() is Some((id, name)) {
+        v1.insert(id, name);
+      }
+      Term({
+        coefficients: c1,
+        constant: k1 + k2,
+        var_names: v1,
+      })
+    }
+  }
+
+  pub impl add_term_var: Add[Term, Var, Term] {
+    fn .add(t1: Term, t2: Var) -> Term {
+      t1 + t2 as Term
+    }
+  }
+
+  pub impl add_var_term: Add[Var, Term, Term] {
+    fn .add(t1: Var, t2: Term) -> Term {
+      t1 as Term + t2
+    }
+  }
+
+  pub impl add_f32_term: Add[F32, Term, Term] {
+    fn .add(f: F32, t: Term) -> Term {
+      f as Term + t
+    }
+  }
+
+  pub impl add_term_f32: Add[Term, F32, Term] {
+    fn .add(t: Term, f: F32) -> Term {
+      t + f as Term
+    }
+  }
+
+  pub impl sub_term_term: Sub[Term, Term, Term] {
+    fn .sub(Term({coefficients: c1, constant: k1, var_names: v1}), Term({coefficients: c2, constant: k2, var_names: v2})) -> Term {
+      let c2_iter = c2.into_iter();
+      while c2_iter.next() is Some((id, coef)) {
+        match c1.get(&id) {
+          Some(&c1_coef) {
+            c1_coef -= coef;
+          }
+          None {
+            c1.insert(id, -coef);
+          }
+        }
+      }
+      let v2_iter = v2.into_iter();
+      while v2_iter.next() is Some((id, name)) {
+        v1.insert(id, name);
+      }
+      Term({
+        coefficients: c1,
+        constant: k1 - k2,
+        var_names: v1,
+      })
+    }
+  }
+
+  pub impl sub_term_var: Sub[Term, Var, Term] {
+    fn .sub(t1: Term, t2: Var) -> Term {
+      t1 - t2 as Term
+    }
+  }
+
+  pub impl sub_var_term: Sub[Var, Term, Term] {
+    fn .sub(t1: Var, t2: Term) -> Term {
+      t1 as Term - t2
+    }
+  }
+
+  pub impl sub_f32_term: Sub[F32, Term, Term] {
+    fn .sub(f: F32, t: Term) -> Term {
+      f as Term - t
+    }
+  }
+
+  pub impl sub_term_f32: Sub[Term, F32, Term] {
+    fn .sub(t: Term, f: F32) -> Term {
+      t - f as Term
+    }
+  }
+
+  pub impl mul_f32_term: Mul[F32, Term, Term] {
+    fn .mul(f: F32, Term({coefficients, constant, var_names})) -> Term {
+      let c_iter = coefficients.iter();
+      while c_iter.next() is Some(&(id, coef)) {
+        coef *= f;
+      }
+      Term({
+        coefficients: coefficients,
+        constant: constant * f,
+        var_names: var_names,
+      })
+    }
+  }
+
+  pub impl mul_term_f32: Mul[Term, F32, Term] {
+    fn .mul(t: Term, f: F32) -> Term {
+      f * t
+    }
+  }
+}

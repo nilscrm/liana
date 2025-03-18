@@ -14,12 +14,14 @@ Solve the linear program
 ```
 
 ```rust
-let cost_coefficients = [3.0, 4.0];
-let a = [[1.0, 2.0],
-        [3.0, 2.0]];
-let right_hand_side = [8.0, 12.0];
+let lp = LinearProgram::new();
+let x = lp.new_var("x");
+let y = lp.new_var("y");
 
-let lp = Tableau::new(a, right_hand_side, cost_coefficients);
+lp.add_constraint(Constraint::le(x + 2.0*y, 8.0 as Term));
+lp.add_constraint(Constraint::le(3.0*x + 2.0*y, 12.0 as Term));
+
+lp.set_objective(3.0*x + 4.0*y);
 let (solution_value, solution) = lp.solve().unwrap();
 ```
 

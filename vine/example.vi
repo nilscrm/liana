@@ -1,6 +1,8 @@
-mod simplex = "./simplex.vi";
+mod liana = "./liana.vi";
 
-use simplex::Tableau;
+use liana::linear_program::LinearProgram;
+use liana::constraint::Constraint;
+use liana::terms::Term;
 
 pub fn main(&io: &IO) {
   // Example: Maximize 3x + 4y
@@ -8,16 +10,22 @@ pub fn main(&io: &IO) {
   //          x + 2y <= 8
   //          3x + 2y <= 12
   //          x, y >= 0
-  let c = [3.0, 4.0];
-  let a = [[1.0, 2.0],
-          [3.0, 2.0]];
-  let b = [8.0, 12.0];
-  let lp = Tableau::new(a, b, c);
+  let lp = LinearProgram::new();
+  let x = lp.new_var("x");
+  let y = lp.new_var("y");
 
+  lp.add_constraint(Constraint::le(x + 2.0*y, 8.0 as Term));
+  lp.add_constraint(Constraint::le(3.0*x + 2.0*y, 12.0 as Term));
+
+  lp.set_objective(3.0*x + 4.0*y);
+
+  io.println("{lp}");
+  io.println("");
+  
   match lp.solve() {
-    Ok((sol_value, sol)) {
+    Ok((sol_value, solution)) {
       io.println("Solution value: {sol_value}");
-      io.println("Solution: {sol}");
+      io.println("Solution: {solution}");
     }
     Err(msg) {
       io.println("Can't find a solution to the linear program: {msg}");
