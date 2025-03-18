@@ -31,6 +31,8 @@ vine run vine/example.vi
 ```
 
 ## Structure
-- [`simplex.vi`](./vine/simplex.vi): Contains the implementation of the simplex method for solving linear programs
-- [`example.vi`](./vine/example.vi): Contains the example linear program shown above
-- [`rust/`](/rust/): Contains a Rust implementation for comparison
+- [`constraint.vi`](./src/constraint.vi): Represents a single linear constraint
+- [`example.vi`](./src/example.vi): Contains the example linear program shown above
+- [`linear_program`](./src/linear_program.vi): Main struct to define linear programs
+- [`simplex.vi`](./src/simplex.vi): Contains the implementation of the simplex method for solving linear programs
+- [`terms.vi`](./src/terms.vi): Linear making up constraints and objective functions with a custom DSL

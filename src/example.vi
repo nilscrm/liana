@@ -17,7 +17,7 @@ pub fn main(&io: &IO) {
   lp.add_constraint(Constraint::le(x + 2.0*y, 8.0 as Term));
   lp.add_constraint(Constraint::le(3.0*x + 2.0*y, 12.0 as Term));
 
-  lp.set_objective(3.0*x + 4.0*y);
+  lp.set_objective(3.0*x + 4.0*y + 5.0);
 
   io.println("{lp}");
   io.println("");
