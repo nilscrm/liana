@@ -1,0 +1,30 @@
+name: Run Tests
+
+on: pull_request
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+
+    - name: Set up Vine
+      run: |
+        cargo install --git https://github.com/VineLang/vine --branch main vine-cli
+        
+    - name: Run tests
+      run: |
+        python tests/run_tests.py

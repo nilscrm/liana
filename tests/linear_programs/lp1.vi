@@ -1,15 +1,10 @@
-mod liana = "./liana.vi";
+mod liana = "../../src/liana.vi";
 
 use liana::linear_program::LinearProgram;
 use liana::constraint::Constraint;
 use liana::terms::Term;
 
 pub fn main(&io: &IO) {
-  // Example: Maximize 3x + 4y
-  //          Subject to:
-  //          x + 2y <= 8
-  //          3x + 2y <= 12
-  //          x, y >= 0
   let lp = LinearProgram::new();
   let x = lp.new_var("x");
   let y = lp.new_var("y");
@@ -18,17 +13,13 @@ pub fn main(&io: &IO) {
   lp.add_constraint(Constraint::le(3.0*x + 2.0*y, 12.0 as Term));
 
   lp.set_objective(3.0*x + 4.0*y);
-
-  io.println("{lp}");
-  io.println("");
   
   match lp.solve() {
     Ok((sol_value, solution)) {
-      io.println("Solution value: {sol_value}");
-      io.println("Solution: {solution}");
+      io.println("{sol_value}, {solution}");
     }
     Err(msg) {
-      io.println("Can't find a solution to the linear program: {msg}");
+      io.println(msg);
     }
   }
 }
