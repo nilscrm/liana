@@ -1,6 +1,6 @@
 # Liana
 
-Liana is a linear program solver written in [Vine](https://vine.dev/). It uses the simplex method to solve linear programs in the standard form.
+Liana is a linear program solver written in [Vine](https://vine.dev/). It uses the simplex method to solve linear programs.
 
 ## Example
 Solve the linear program
