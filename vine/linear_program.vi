@@ -1,0 +1,68 @@
+use liana::simplex::Tableau;
+use liana::terms::{Term, Var};
+use liana::constraint::Constraint;
+
+use std::unicode::ToString;
+use std::data::Map;
+use std::ops::arithmetic::{Add, Sub, Mul};
+use std::ops::Cast;
+
+pub struct LinearProgram {
+  vars: List[Var],
+  objective: Term,
+  constraints: List[Constraint],
+}
+
+pub mod LinearProgram {
+  pub fn new() -> LinearProgram {
+    LinearProgram({
+      vars: [],
+      objective: 0 as Term,
+      constraints: [],
+    })
+  }
+
+  /// Adds a new variable with lower bound 0
+  pub fn .new_var(&LinearProgram({vars, objective, constraints}), name: String) -> Var {
+    let var = Var({id: vars.len(), name});
+    vars.push_back(var);
+    var
+  }
+
+  pub fn .add_constraint(&LinearProgram({vars, objective, constraints}), constraint: Constraint) {
+    constraints.push_back(constraint);
+  }
+
+  pub fn .set_objective(&LinearProgram({vars, objective, constraints}), new_objective: Term) {
+    objective = new_objective;
+  }
+
+  // TODO
+  pub fn .solve(&LinearProgram({vars, objective, constraints})) -> Result[(F32, List[F32]), String] {
+    let num_vars = vars.len();
+
+    let constraint_matrix = [];
+    let rhs = [];
+
+    // Use objective row rhs for initial tableau value
+    let (objective_row, _) = objective.to_matrix_row(num_vars);
+
+    let constraints_iter = constraints.iter();
+    while constraints_iter.next() is Some(&constraint) {
+      let (row, constant) = constraint.to_matrix_row(num_vars);
+      constraint_matrix.push_back(row);
+      rhs.push_back(constant);
+    }
+
+    let tableau = Tableau::new(constraint_matrix, rhs, objective_row);
+    tableau.solve()
+  }
+
+  pub impl toString: ToString[LinearProgram] {
+    fn .to_string(LinearProgram({vars, objective, constraints})) -> String {
+      let constraint_str = constraints.map(ToString::to_string[Constraint]).join("\n");
+      let var_str = vars.map(ToString::to_string[Var]).join(", ");
+      "Maximize {objective}\nSubject to:\n{constraint_str}\n{var_str} >= 0"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+use std::unicode::ToString;
+
+pub struct Constraint {
+  lhs: Term,
+  rhs: Term,
+}
+
+pub mod Constraint {
+  // TODO: Allow `Cast[T, Term]` as arguments once generic type inference becomes good enough
+  pub fn le(lhs: Term, rhs: Term) -> Constraint {
+    Constraint({
+      lhs: lhs,
+      rhs: rhs,
+    })
+  }
+
+  pub fn ge(lhs: Term, rhs: Term) -> Constraint {
+    Constraint({
+      lhs: rhs,
+      rhs: lhs,
+    })
+  }
+
+  pub impl toString: ToString[Constraint] {
+    fn .to_string(Constraint({lhs, rhs})) -> String {
+      "{lhs} <= {rhs}"
+    }
+  }
+
+  pub fn .to_matrix_row(Constraint({lhs, rhs}), num_vars: N32) -> (List[F32], F32) {
+    let term = lhs - rhs;
+    term.to_matrix_row(num_vars)
+  }
+}
