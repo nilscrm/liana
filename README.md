@@ -27,7 +27,7 @@ let (solution_value, solution) = lp.solve().unwrap();
 
 You can also run this example with
 ```bash
-vine run vine/example.vi
+vine run src/example.vi
 ```
 
 ## Structure
