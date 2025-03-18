@@ -23,7 +23,7 @@ jobs:
 
     - name: Set up Vine
       run: |
-        cargo install --git https://github.com/VineLang/vine --branch main vine
+        cargo install --git https://github.com/VineLang/vine --branch main vine-cli
         
     - name: Run tests
       run: |
