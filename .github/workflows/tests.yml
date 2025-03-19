@@ -29,7 +29,12 @@ jobs:
       id: vine-cache
       uses: actions/cache@v4
       with:
-        path: ~/.cargo/bin/vine
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          ~/.cargo/git/checkouts/
         key: vine-cli-${{ steps.vine-sha.outputs.sha }}
     - name: Install vine-cli if not cached
       if: steps.vine-cache.outputs.cache-hit != 'true'
