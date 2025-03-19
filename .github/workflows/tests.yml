@@ -21,12 +21,18 @@ jobs:
         toolchain: stable
         override: true
     
-    - name: Set up Vine
-      uses: taiki-e/cache-cargo-install-action@v2
+    - name: Get latest Vine commit SHA
+      id: vine-sha
+      run: |
+        echo "sha=$(git ls-remote https://github.com/VineLang/vine main | cut -f1)" >> $GITHUB_OUTPUT
+    - name: Cache vine-cli
+      uses: actions/cache@v4
       with:
-        tool: vine-cli
-        git: https://github.com/VineLang/vine
-        tag: main
+        path: ~/.cargo/bin/vine
+        key: vine-cli-${{ steps.vine-sha.outputs.sha }}
+    - name: Install vine-cli if not cached
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: cargo install vine-cli --git https://github.com/VineLang/vine --rev ${{ steps.vine-sha.outputs.sha }}
         
     - name: Run tests
       run: |
