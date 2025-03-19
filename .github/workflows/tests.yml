@@ -20,10 +20,13 @@ jobs:
         profile: minimal
         toolchain: stable
         override: true
-
+    
     - name: Set up Vine
-      run: |
-        cargo install --git https://github.com/VineLang/vine --branch main vine-cli
+      uses: taiki-e/cache-cargo-install-action@v2
+      with:
+        tool: vine-cli
+        git: https://github.com/VineLang/vine
+        tag: main
         
     - name: Run tests
       run: |
