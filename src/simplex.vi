@@ -146,7 +146,7 @@ pub mod Tableau {
       row_index += 1;
     }
 
-    let &basic_var_leaving = basic_vars.get(leaving_row_index);
+    let &basic_var_leaving = basic_vars.get(leaving_row_index - 1);
     basic_var_leaving = entering_var;
   }
 
@@ -178,7 +178,7 @@ pub mod Tableau {
     let basic_vars_iter = basic_vars.iter();
     while basic_vars_iter.next() is Some(&basic_var) {
       let &val = rhs_iter.next().unwrap();
-      let &sol_place = solution.get(basic_var - 1);
+      let &sol_place = solution.get(basic_var);
       sol_place = val;
     }
 
