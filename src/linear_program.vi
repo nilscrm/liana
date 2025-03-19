@@ -37,24 +37,8 @@ pub mod LinearProgram {
     objective = new_objective;
   }
 
-  // TODO
   pub fn .solve(&LinearProgram({vars, objective, constraints})) -> Result[(F32, List[F32]), String] {
-    let num_vars = vars.len();
-
-    let constraint_matrix = [];
-    let rhs = [];
-
-    // Use objective row rhs for initial tableau value
-    let (objective_row, _) = objective.to_matrix_row(num_vars);
-
-    let constraints_iter = constraints.iter();
-    while constraints_iter.next() is Some(&constraint) {
-      let (row, constant) = constraint.to_matrix_row(num_vars);
-      constraint_matrix.push_back(row);
-      rhs.push_back(constant);
-    }
-
-    let tableau = Tableau::new(constraint_matrix, rhs, objective_row);
+    let tableau = Tableau::new(vars.len(), constraints, objective);
     tableau.solve()
   }
 

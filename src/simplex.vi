@@ -1,4 +1,7 @@
 use std::unicode::ToString;
+use liana::constraint::Constraint;
+use liana::terms::Term;
+
 
 /// Represents a linear programming problem in tableau form
 struct Tableau(
@@ -14,23 +17,23 @@ struct Tableau(
 )
 
 pub mod Tableau {
-  /// Create a new tableau for a standard form linear programming problem:
-  /// Maximize z = c^T x
-  /// Subject to Ax <= b
-  ///            x >= 0
-  ///
-  /// # Arguments
-  /// * `a` - The constraint coefficients matrix (list of rows)
-  /// * `b` - The constraint right-hand sides
-  /// * `c` - The objective function coefficients
-  pub fn new(a: List[List[F32]], b: List[F32], c: List[F32]) -> Tableau {
-    let num_constraints = a.len();
-    let num_original_vars = c.len();
+  pub fn new(num_vars: N32, constraints: List[Constraint], objective: Term) -> Tableau {
+    let constraint_matrix = [];
+    let rhs = [];
+
+    let constraints_iter = constraints.iter();
+    while constraints_iter.next() is Some(&constraint) {
+      let (row, constant) = constraint.to_matrix_row(num_vars);
+      constraint_matrix.push_back(row);
+      rhs.push_back(constant);
+    }
+
+    let num_constraints = constraints.len();
 
     // Add slack variables
-    let a_iter = a.iter();
+    let constraint_matrix_iter = constraint_matrix.iter();
     let i = 0;
-    while a_iter.next() is Some(&row) {
+    while constraint_matrix_iter.next() is Some(&row) {
       let j = 0;
       while j < num_constraints {
         if j == i {
@@ -43,39 +46,39 @@ pub mod Tableau {
       i += 1;
     }
 
-    // Invert cost coefficients
-    c = c.map(fn(x: F32) { -x });
-    // Add slack variables to cost row
+    let (objective_row, objective_rhs) = objective.to_matrix_row(num_vars);
+    objective_row = objective_row.map(fn(x: F32) { -x });
+    objective_rhs = -objective_rhs;
+
+    // Add slack variables to objective row
     let i = 0;
     while i < num_constraints {
-      c.push_back(0.0);
+      objective_row.push_back(0.0);
       i += 1;
     }
-    a.push_front(c);
-
-    // Add dummy rhs value for cost row
-    b.push_front(0.0);
+    constraint_matrix.push_front(objective_row);
+    rhs.push_front(objective_rhs);
 
     let basic_vars = [];
     let i = 0;
     while i < num_constraints {
-      basic_vars.push_back(num_original_vars + i);
+      basic_vars.push_back(num_vars + i);
       i += 1;
     }
 
-    Tableau(a, b, num_original_vars, basic_vars)
+    Tableau(constraint_matrix, rhs, num_vars, basic_vars)
   }
 
   /// Find the entering variable index using the most negative coefficient rule
   pub fn .find_entering_var(&Tableau(matrix, _, _, _)) -> Option[N32] {
-    let &cost_row = matrix.get(0);
+    let &objective_row = matrix.get(0);
 
     let min_coeff = 0.0;
     let entering_var = None;
 
-    let cost_iter = cost_row.iter();
+    let objective_iter = objective_row.iter();
     let column_index = 0;
-    while cost_iter.next() is Some(&obj_coef) {
+    while objective_iter.next() is Some(&obj_coef) {
       if obj_coef < min_coeff {
         min_coeff = obj_coef;
         entering_var = Some(column_index);
