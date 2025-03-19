@@ -5,10 +5,10 @@ on: pull_request
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v3
-      
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -20,7 +20,7 @@ jobs:
         profile: minimal
         toolchain: stable
         override: true
-    
+
     - name: Get latest Vine commit SHA
       id: vine-sha
       run: |
@@ -33,7 +33,7 @@ jobs:
     - name: Install vine-cli if not cached
       if: steps.cache.outputs.cache-hit != 'true'
       run: cargo install vine-cli --git https://github.com/VineLang/vine --rev ${{ steps.vine-sha.outputs.sha }}
-        
+
     - name: Run tests
       run: |
         python tests/run_tests.py
