@@ -2,7 +2,7 @@ mod liana = "./liana.vi";
 
 use liana::linear_program::LinearProgram;
 use liana::constraint::Constraint;
-use liana::terms::Term;
+use liana::term::Term;
 
 pub fn main(&io: &IO) {
   // Example: Maximize 3x + 4y
@@ -11,8 +11,8 @@ pub fn main(&io: &IO) {
   //          3x + 2y <= 12
   //          x, y >= 0
   let lp = LinearProgram::new();
-  let x = lp.new_var("x");
-  let y = lp.new_var("y");
+  let x = lp.new_var("x", 0.0, F32::inf);
+  let y = lp.new_var("y", 0.0, F32::inf);
 
   lp.add_constraint(Constraint::le(x + 2.0*y, 8.0 as Term));
   lp.add_constraint(Constraint::le(3.0*x + 2.0*y, 12.0 as Term));

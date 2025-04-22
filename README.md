@@ -35,4 +35,5 @@ vine run src/example.vi
 - [`example.vi`](./src/example.vi): Contains the example linear program shown above
 - [`linear_program`](./src/linear_program.vi): Main struct to define linear programs
 - [`simplex.vi`](./src/simplex.vi): Contains the implementation of the simplex method for solving linear programs
-- [`terms.vi`](./src/terms.vi): Linear making up constraints and objective functions with a custom DSL
+- [`term.vi`](./src/term.vi): Linear making up constraints and objective functions with a custom DSL
+- [`variable.vi`](./src/variable.vi): Variables used in terms

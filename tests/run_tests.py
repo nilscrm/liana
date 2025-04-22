@@ -18,7 +18,7 @@ for file in os.listdir("tests/linear_programs"):
             file_stem = file.split(".")[0]
             with open(f"tests/outputs/{file_stem}.out", "r") as f:
                 expected_output = f.read()
-                if result.stdout == expected_output:
+                if result.returncode == 0 and result.stdout == expected_output:
                     print("PASSED")
                     num_passed += 1
                 else:

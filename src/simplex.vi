@@ -1,6 +1,6 @@
 use std::unicode::ToString;
 use liana::constraint::Constraint;
-use liana::terms::Term;
+use liana::term::Term;
 
 
 /// Represents a linear programming problem in tableau form

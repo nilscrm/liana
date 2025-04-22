@@ -1,0 +1,12 @@
+mod liana = "./liana.vi";
+
+use liana::linear_program::LinearProgram;
+use liana::constraint::Constraint;
+use liana::terms::Term;
+
+pub fn main(&io: &IO) {
+  let l = [1,2,3,4];
+  let &x = l.get(3);
+  x = 7;
+  io.println("{l}");
+}
