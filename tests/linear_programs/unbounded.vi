@@ -2,12 +2,12 @@ mod liana = "../../src/liana.vi";
 
 use liana::linear_program::LinearProgram;
 use liana::constraint::Constraint;
-use liana::terms::Term;
+use liana::term::Term;
 
 pub fn main(&io: &IO) {
   let lp = LinearProgram::new();
-  let x = lp.new_var("x");
-  let y = lp.new_var("y");
+  let x = lp.new_var("x", 0.0, F32::inf);
+  let y = lp.new_var("y", 0.0, F32::inf);
 
   lp.add_constraint(Constraint::le(-1.0 * x + y, 1.0 as Term));
   lp.set_objective(x + y);

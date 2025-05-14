@@ -31,4 +31,11 @@ pub mod Constraint {
     let term = lhs - rhs;
     term.to_matrix_row(num_vars)
   }
+
+  pub fn .substitute_var(Constraint({lhs, rhs}), var_id: N32, substitute_with: Term) -> Constraint {
+    Constraint({
+      lhs: lhs.substitute_var(var_id, substitute_with),
+      rhs: rhs.substitute_var(var_id, substitute_with),
+    })
+  }
 }

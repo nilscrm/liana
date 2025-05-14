@@ -1,6 +1,7 @@
-use liana::simplex::Tableau;
-use liana::terms::{Term, Var};
 use liana::constraint::Constraint;
+use liana::simplex::Tableau;
+use liana::term::Term;
+use liana::variable::Var;
 
 use std::unicode::ToString;
 use std::data::Map;
@@ -11,6 +12,27 @@ pub struct LinearProgram {
   vars: List[Var],
   objective: Term,
   constraints: List[Constraint],
+  normalized_lp: Option[LinearProgram],
+  normalized_var_representations: Map[N32, VarRepresentation],
+}
+
+/// LPs have to be normalized into the normal form to be solved by the simplex method.
+/// This struct represents which variables in the normalized LP represents the original var
+/// original_var = pos - neg - const
+struct VarRepresentation {
+  pos_var_id: Option[N32],
+  neg_var_id: Option[N32],
+  const_shift: F32,
+}
+
+pub mod VarRepresentation {
+  pub impl toString: ToString[VarRepresentation] {
+    fn .to_string(VarRepresentation({pos_var_id, neg_var_id, const_shift})) -> String {
+      let pos_str = pos_var_id.map(ToString::to_string[N32]).unwrap_or("None");
+      let neg_str = neg_var_id.map(ToString::to_string[N32]).unwrap_or("None");
+      "VarRepresentation(pos_var_id: {pos_str}, neg_var_id: {neg_str}, const_shift: {const_shift})"
+    }
+  }
 }
 
 pub mod LinearProgram {
@@ -19,34 +41,153 @@ pub mod LinearProgram {
       vars: [],
       objective: 0 as Term,
       constraints: [],
+      normalized_lp: None,
+      normalized_var_representations: Map::empty[N32, VarRepresentation],
     })
   }
 
-  /// Adds a new variable with lower bound 0
-  pub fn .new_var(&LinearProgram({vars, objective, constraints}), name: String) -> Var {
-    let var = Var({id: vars.len(), name});
+  pub fn .new_var(&LinearProgram({vars, objective, constraints, normalized_lp, normalized_var_representations}), name: String, lower_bound: F32, upper_bound: F32) -> Var {
+    let var = Var({id: vars.len(), name, lower_bound, upper_bound});
     vars.push_back(var);
     var
   }
 
-  pub fn .add_constraint(&LinearProgram({vars, objective, constraints}), constraint: Constraint) {
+  pub fn .add_constraint(&LinearProgram({vars, objective, constraints, normalized_lp, normalized_var_representations}), constraint: Constraint) {
     constraints.push_back(constraint);
   }
 
-  pub fn .set_objective(&LinearProgram({vars, objective, constraints}), new_objective: Term) {
+  pub fn .set_objective(&LinearProgram({vars, objective, constraints, normalized_lp, normalized_var_representations}), new_objective: Term) {
     objective = new_objective;
   }
 
-  pub fn .solve(&LinearProgram({vars, objective, constraints})) -> Result[(F32, List[F32]), String] {
-    let tableau = Tableau::new(vars.len(), constraints, objective);
-    tableau.solve()
+  pub fn .normalize(&LinearProgram({vars, objective, constraints, normalized_lp, normalized_var_representations})) {
+    normalized_var_representations = Map::empty[N32, VarRepresentation];
+    let new_constraints = constraints;
+    let new_objective = objective;
+    let new_vars = [];
+
+    let vars_iter = vars.iter();
+    while vars_iter.next() is Some(&var) {
+      let Var({id, name, lower_bound, upper_bound}) = var;
+      let (pos_var_id, neg_var_id, shift, substitute_with) = if lower_bound == F32::neg_inf && upper_bound == F32::inf {
+        // Unbounded variable needs to be split into two variables: x = x⁺ - x⁻
+        let pos_var_id = new_vars.len();
+        let pos_var = Var({id: pos_var_id, name: "{name}_pos", lower_bound: 0.0, upper_bound: F32::inf});
+        new_vars.push_back(pos_var);
+        let neg_var_id = new_vars.len();
+        let neg_var = Var({id: neg_var_id, name: "{name}_neg", lower_bound: 0.0, upper_bound: F32::inf});
+        new_vars.push_back(neg_var);
+        (Some(pos_var_id), Some(neg_var_id), 0.0, pos_var - neg_var)
+      } else if lower_bound != F32::neg_inf {
+        // Variable has a proper lower bound and thus only needs to be shifted
+        let shift = -lower_bound;
+        let pos_var_id = new_vars.len();
+        let var = Var({id: pos_var_id, name: "{name}", lower_bound: 0.0, upper_bound: F32::inf});
+        let new_upper_bound = upper_bound + shift;
+        if new_upper_bound != F32::inf {
+          new_constraints.push_back(Constraint::le(var as Term, new_upper_bound as Term));
+        }
+        new_vars.push_back(var);
+        (Some(pos_var_id), None, shift, var - shift)
+      } else {
+        // Variable has no lower bound and thus must have an upper bound (because of first if)
+        // We multiply the variable by a -1 and proceed like in the case before
+        let new_lower_bound = -upper_bound;
+        let shift = -new_lower_bound;
+        let neg_var_id = new_vars.len();
+        let neg_var = Var({id: neg_var_id, name: "{name}_inv", lower_bound: 0.0, upper_bound: F32::inf});
+        new_vars.push_back(neg_var);
+        // We know there was no lower bound and so no need to add an additional constraints for an upper bound as in the previous case
+        (None, Some(neg_var_id), shift, (-neg_var) - shift)
+      }
+
+      normalized_var_representations.insert(id, VarRepresentation({pos_var_id, neg_var_id, const_shift: shift}));
+      // Substitute the variable in the objective and constraints
+      new_objective = new_objective.substitute_var(id, substitute_with);
+      let constraints_iter = new_constraints.iter();
+      while constraints_iter.next() is Some(&constraint) {
+        constraint = constraint.substitute_var(id, substitute_with);
+      }
+    }
+
+    normalized_lp = Some(LinearProgram({
+      vars: new_vars,
+      objective: new_objective,
+      constraints: new_constraints,
+      normalized_lp: None,
+      normalized_var_representations: Map::empty[N32, VarRepresentation],
+    }));
+  }
+
+  pub fn .solve(&self: &LinearProgram) -> Result[(F32, Map[String, F32]), String] {
+    if self.normalized_lp is None {
+      self.normalize();
+    }
+    let LinearProgram({vars, objective, constraints, normalized_lp, normalized_var_representations}) = self;
+    let LinearProgram({vars: normalized_vars, objective: normalized_objective, constraints: normalized_constraints, normalized_lp: _, normalized_var_representations: _}) = normalized_lp.unwrap();
+
+    let tableau = Tableau::new(normalized_vars.len(), normalized_constraints, normalized_objective);
+
+    // Solve the processed problem
+    match tableau.solve() {
+      Ok((sol_value, solution)) {
+        // Transform solution back to original variables
+        let solution_map = Map::empty[String, F32];
+
+        // Process each original variable to transform solution
+        let vars_iter = vars.iter();
+        while vars_iter.next() is Some(&var) {
+          let Var({id, name, lower_bound, upper_bound}) = var;
+          let &var_repr = normalized_var_representations.get(&id).unwrap();
+          let VarRepresentation({pos_var_id, neg_var_id, const_shift}) = var_repr;
+
+          let var_value = -const_shift;
+          if pos_var_id is Some(pos_var_id) {
+            let &pos_val = solution.get(pos_var_id);
+            var_value += pos_val;
+          }
+          if neg_var_id is Some(neg_var_id) {
+            let &neg_val = solution.get(neg_var_id);
+            var_value -= neg_val;
+          }
+          solution_map.insert(name, var_value);
+        }
+
+        Ok((sol_value, solution_map))
+      }
+      Err(msg) { Err(msg) }
+    }
   }
 
   pub impl toString: ToString[LinearProgram] {
-    fn .to_string(LinearProgram({vars, objective, constraints})) -> String {
+    fn .to_string(LinearProgram({vars, objective, constraints, normalized_lp, normalized_var_representations})) -> String {
       let constraint_str = constraints.map(ToString::to_string[Constraint]).join("\n");
-      let var_str = vars.map(ToString::to_string[Var]).join(", ");
-      "Maximize {objective}\nSubject to:\n{constraint_str}\n{var_str} >= 0"
+      
+      // Build variable bounds string using iterators
+      let var_bounds = [];
+      let vars_iter = vars.iter();
+      while vars_iter.next() is Some(&var) {
+        let Var({id, name, lower_bound, upper_bound}) = var;
+        let bound_str = "";
+        
+        // Handle lower bound
+        if lower_bound == -F32::inf {
+          bound_str = "{name} unbounded below";
+        } else {
+          bound_str = "{name} >= {lower_bound}";
+        }
+        
+        // Handle upper bound
+        if upper_bound != F32::inf {
+          bound_str ++= " and {name} <= {upper_bound}";
+        }
+        
+        var_bounds.push_back(bound_str);
+      }
+      
+      let bounds_str = var_bounds.join("\n");
+      
+      "Maximize {objective}\nSubject to:\n{constraint_str}\n{bounds_str}"
     }
   }
 }

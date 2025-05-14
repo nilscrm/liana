@@ -1,0 +1,31 @@
+mod liana = "../../src/liana.vi";
+
+use liana::linear_program::LinearProgram;
+use liana::constraint::Constraint;
+use liana::term::Term;
+
+pub fn main(&io: &IO) {
+  let lp = LinearProgram::new();
+  
+  // Create variables with different bounds
+  let x = lp.new_var("x", -3.0, F32::inf);        // x >= -3
+  let y = lp.new_var("y", 0.0, 5.0);             // 0 <= y <= 5
+  let z = lp.new_var("z", -F32::inf, F32::inf);  // z unbounded
+
+  // Add constraints
+  lp.add_constraint(Constraint::le(x + 2.0*y + z, 10.0 as Term));
+  lp.add_constraint(Constraint::le(3.0*x + y - 2.0*z, 6.0 as Term));
+
+  // Set objective
+  lp.set_objective(x + 4.0*y - z);
+  
+  // Solve
+  match lp.solve() {
+    Ok((sol_value, solution)) {
+      io.println("{sol_value}, {solution}");
+    }
+    Err(msg) {
+      io.println(msg);
+    }
+  }
+} 
