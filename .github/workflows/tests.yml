@@ -43,3 +43,5 @@ jobs:
     - name: Run tests
       run: |
         python tests/run_tests.py
+    - name: Make sure example.vi runs
+      run: vine run --no-stats src/example.vi
