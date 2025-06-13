@@ -1,0 +1,337 @@
+
+use std::data::Map;
+use std::debug::Show;
+use std::ops::{Cast, comparison::Eq};
+
+use liana::linear_program::{LinearProgram, Objective};
+use liana::term::Term;
+use liana::constraint::{Constraint, ConstraintType};
+use liana::variable::Var;
+
+pub enum RowType {
+  NonConstraining,
+  Equal,
+  LessEqual,
+  GreaterEqual,
+}
+
+pub mod RowType {
+  pub impl show: Show[RowType] {
+    fn show(&self: &RowType) -> Show {
+      match self {
+        NonConstraining { Show::Literal("N") }
+        Equal { Show::Literal("E") }
+        LessEqual { Show::Literal("L") }
+        GreaterEqual { Show::Literal("G") }
+      }
+    }
+  }
+
+  pub impl eq: Eq[RowType] {
+    fn eq(&self: &RowType, &other: &RowType) -> Bool {
+      match (self, other) {
+        (RowType::NonConstraining, RowType::NonConstraining) { true }
+        (RowType::Equal, RowType::Equal) { true }
+        (RowType::LessEqual, RowType::LessEqual) { true }
+        (RowType::GreaterEqual, RowType::GreaterEqual) { true }
+        _ { false }
+      }
+    }
+
+    fn ne(&self: &RowType, &other: &RowType) -> Bool {
+      !(self == other)
+    }
+  }
+}
+
+/// Represents the type of a bound in the BOUNDS section.
+/// Lower: Lower bound ( >= value )
+/// Upper: Upper bound ( <= value )
+/// Fixed: Fixed value ( == value )
+/// Free: Free variable ( -inf to +inf )
+/// MinusInfinity: Lower bound of -infinity
+/// PlusInfinity: Upper bound of +infinity (often implicit for non-negative vars if no UP)
+pub enum BoundType {
+  Lower,
+  Upper,
+  Fixed,
+  Free,
+  MinusInfinity,
+  PlusInfinity,
+}
+
+pub mod BoundType {
+  pub impl show: Show[BoundType] {
+    fn show(&self: &BoundType) -> Show {
+      match self {
+        Lower { Show::Literal("LO") }
+        Upper { Show::Literal("UP") }
+        Fixed { Show::Literal("FX") }
+        Free { Show::Literal("FR") }
+        MinusInfinity { Show::Literal("MI") }
+        PlusInfinity { Show::Literal("PL") }
+      }
+    }
+  }
+}
+
+pub enum ObjectiveSense {
+  Minimize,
+  Maximize,
+}
+
+pub mod ObjectiveSense {
+  pub impl show: Show[ObjectiveSense] {
+    fn show(&self: &ObjectiveSense) -> Show {
+      match self {
+        Minimize { Show::Literal("Minimize") }
+        Maximize { Show::Literal("Maximize") }
+      }
+    }
+  }
+}
+
+pub struct RowDefinition(pub { row_type: RowType, name: String });
+
+pub mod RowDefinition {
+  pub impl show: Show[RowDefinition] {
+    fn show(&RowDefinition({ row_type, name })) -> Show {
+      Show::Constructor(
+        "RowDefinition",
+        Show::Object([
+          (Show::Literal("row_type"), row_type.show()),
+          (Show::Literal("name"), name.show()),
+        ]),
+      )
+    }
+  }
+}
+
+pub struct ColumnEntry(pub { var_name: String, row_name: String, value: F32 });
+
+pub mod ColumnEntry {
+  pub impl show: Show[ColumnEntry] {
+    fn show(&ColumnEntry({ var_name, row_name, value })) -> Show {
+      Show::Constructor(
+        "ColumnEntry",
+        Show::Object([
+          (Show::Literal("var_name"), var_name.show()),
+          (Show::Literal("row_name"), row_name.show()),
+          (Show::Literal("value"), value.show()),
+        ]),
+      )
+    }
+  }
+}
+
+pub struct RhsEntry(pub { rhs_name: String, row_name: String, value: F32 });
+
+pub mod RhsEntry {
+  pub impl show: Show[RhsEntry] {
+    fn show(&RhsEntry({ rhs_name, row_name, value })) -> Show {
+      Show::Constructor(
+        "RhsEntry",
+        Show::Object([
+          (Show::Literal("rhs_name"), rhs_name.show()),
+          (Show::Literal("row_name"), row_name.show()),
+          (Show::Literal("value"), value.show()),
+        ]),
+      )
+    }
+  }
+}
+
+pub struct RangeEntry(pub { range_name: String, row_name: String, value: F32 });
+
+pub mod RangeEntry {
+  pub impl show: Show[RangeEntry] {
+    fn show(&RangeEntry({ range_name, row_name, value })) -> Show {
+      Show::Constructor(
+        "RangeEntry",
+        Show::Object([
+          (Show::Literal("range_name"), range_name.show()),
+          (Show::Literal("row_name"), row_name.show()),
+          (Show::Literal("value"), value.show()),
+        ]),
+      )
+    }
+  }
+}
+
+pub struct BoundEntry(pub {
+  bound_type: BoundType,
+  bound_name: String,
+  var_name: String,
+  value: Option[F32],
+});
+
+pub mod BoundEntry {
+  pub impl show: Show[BoundEntry] {
+    fn show(&BoundEntry({ bound_type, bound_name, var_name, value })) -> Show {
+      Show::Constructor(
+        "BoundEntry",
+        Show::Object([
+          (Show::Literal("bound_type"), bound_type.show()),
+          (Show::Literal("bound_name"), bound_name.show()),
+          (Show::Literal("var_name"), var_name.show()),
+          (Show::Literal("value"), value.show()),
+        ]),
+      )
+    }
+  }
+}
+
+pub struct MpsData(pub {
+  problem_name: String,
+  objective_sense: ObjectiveSense,
+  rows: List[RowDefinition],
+  columns: List[ColumnEntry],
+  rhs_entries: List[RhsEntry],
+  range_entries: List[RangeEntry],
+  bound_entries: List[BoundEntry],
+});
+
+pub mod MpsData {
+  pub fn new() -> MpsData {
+    MpsData({
+      problem_name: "",
+      objective_sense: ObjectiveSense::Minimize,
+      rows: [],
+      columns: [],
+      rhs_entries: [],
+      range_entries: [],
+      bound_entries: [],
+    })
+  }
+
+  pub impl show: Show[MpsData] {
+    fn show(&MpsData({
+      problem_name,
+      objective_sense,
+      rows,
+      columns,
+      rhs_entries,
+      range_entries,
+      bound_entries,
+    })) -> Show {
+      Show::Constructor(
+        "MpsData",
+        Show::Object([
+          (Show::Literal("problem_name"), problem_name.show()),
+          (Show::Literal("objective_sense"), objective_sense.show()),
+          (Show::Literal("rows"), rows.show()),
+          (Show::Literal("columns"), columns.show()),
+          (Show::Literal("rhs_entries"), rhs_entries.show()),
+          (Show::Literal("range_entries"), range_entries.show()),
+          (Show::Literal("bound_entries"), bound_entries.show()),
+        ]),
+      )
+    }
+  }
+
+  pub fn .to_linear_program(MpsData({
+    problem_name,
+    objective_sense,
+    rows,
+    columns,
+    rhs_entries,
+    range_entries,
+    bound_entries,
+  })) -> Result[LinearProgram, String] {
+    let lp = LinearProgram::new();
+
+    let constraints = rows.filter(fn(&RowDefinition({ row_type, name })) {
+      row_type != RowType::NonConstraining
+    });
+
+    let Some(&objective_row) = rows.find(fn(&RowDefinition({ row_type, name })) {
+      row_type == RowType::NonConstraining
+    }) else { return Err("No objective row found") };
+
+    let row_terms = Map::empty[String, Term];
+
+    let var_lower_bounds = Map::empty[String, F32];
+    let var_upper_bounds = Map::empty[String, F32];
+
+    let bounds_iter = bound_entries.into_iter();
+    while bounds_iter.next() is Some(BoundEntry({ bound_type, bound_name, var_name, value })) {
+      match bound_type {
+        BoundType::Lower {
+          var_lower_bounds.insert(var_name, value.unwrap());
+        }
+        BoundType::Upper {
+          var_upper_bounds.insert(var_name, value.unwrap());
+        }
+        BoundType::Fixed {
+          var_lower_bounds.insert(var_name, value.unwrap());
+          var_upper_bounds.insert(var_name, value.unwrap());
+        }
+        BoundType::Free {
+          var_lower_bounds.insert(var_name, F32::neg_inf);
+          var_upper_bounds.insert(var_name, F32::inf);
+        }
+        BoundType::MinusInfinity {
+          var_lower_bounds.insert(var_name, F32::neg_inf);
+        }
+        BoundType::PlusInfinity {
+          var_upper_bounds.insert(var_name, F32::inf);
+        }
+      }
+    }
+
+    let vars = Map::empty[String, Var];
+
+    let columns_iter = columns.into_iter();
+    while columns_iter.next() is Some(ColumnEntry({ var_name, row_name, value })) {
+      let var = match vars.at(&var_name) {
+        Some(&var) { var }
+        None {
+          let lower_bound = var_lower_bounds.get_or_insert(var_name, 0.0);
+          let upper_bound = var_upper_bounds.get_or_insert(var_name, F32::inf);
+          let var = lp.new_var(var_name, lower_bound, upper_bound);
+          vars.insert(var_name, var);
+          var
+        }
+      };
+
+      let &row_term = row_terms.at_or_insert(row_name, 0.0 as Term);
+      row_term += var * value;
+    }
+
+    let rhs = Map::empty[String, F32];
+    let rhs_entries_iter = rhs_entries.into_iter();
+    while rhs_entries_iter.next() is Some(RhsEntry({ rhs_name, row_name, value })) {
+      rhs.insert(row_name, value);
+    }
+
+    let objective_term = row_terms.remove(&objective_row.name).unwrap_or(0.0 as Term);
+    match objective_sense {
+      ObjectiveSense::Minimize {
+        lp.set_objective(Objective::Minimize(objective_term));
+      }
+      ObjectiveSense::Maximize {
+        lp.set_objective(Objective::Maximize(objective_term));
+      }
+    }
+
+    let row_iter = constraints.into_iter();
+    while row_iter.next() is Some(RowDefinition({ row_type, name })) {
+      let row_term = row_terms.remove(&name).unwrap_or(0.0 as Term);
+      let rhs_value = rhs.remove(&name).unwrap_or(0.0);
+      match row_type {
+        RowType::Equal {
+          lp.add_constraint(Constraint(row_term, ConstraintType::Eq, rhs_value as Term));
+        }
+        RowType::LessEqual {
+          lp.add_constraint(Constraint(row_term, ConstraintType::Le, rhs_value as Term));
+        }
+        RowType::GreaterEqual {
+          lp.add_constraint(Constraint(row_term, ConstraintType::Ge, rhs_value as Term));
+        }
+        RowType::NonConstraining {}
+      }
+    }
+
+    Ok(lp)
+  }
+}

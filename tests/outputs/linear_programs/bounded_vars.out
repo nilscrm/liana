@@ -1,0 +1,4 @@
+Solution({
+  optimal value: +22.00000,
+  solution: Map({ "x": -3.00000, "y": +5.00000, "z": -5.00000 }),
+})
