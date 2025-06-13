@@ -1,40 +1,31 @@
+
 use liana::variable::Var;
 
-use std::ops::arithmetic::{Add, Sub, Mul, Neg};
+use std::ops::arithmetic::{Add, Mul, Neg, Sub};
 use std::ops::Cast;
-use std::unicode::ToString;
 use std::data::Map;
 
-pub struct Term {
-  coefficients: Map[N32, F32],
-  constant: F32,
-  var_names: Map[N32, String],
-}
+pub struct Term(pub { coefficients: Map[N32, F32], constant: F32, var_names: Map[N32, String] });
 
 pub mod Term {
   pub impl fromF32: Cast[F32, Term] {
-    fn .cast(f: F32) -> Term {
-      Term({
-        coefficients: Map::empty[N32, F32],
-        constant: f,
-        var_names: Map::empty[N32, String],
-      })
+    fn cast(f: F32) -> Term {
+      Term({ coefficients: Map::empty[N32, F32], constant: f, var_names: Map::empty[N32, String] })
     }
   }
 
   pub impl fromN32: Cast[N32, Term] {
-    fn .cast(n: N32) -> Term {
+    fn cast(n: N32) -> Term {
       n.as[F32].as[Term]
     }
   }
 
-  pub impl toString: ToString[Term] {
-    fn .to_string(Term({coefficients, constant, var_names})) -> String {
+  pub impl toString: Cast[Term, String] {
+    fn cast(Term({ coefficients, constant, var_names })) -> String {
       let s = "";
       let coefficients_iter = coefficients.into_iter();
       while coefficients_iter.next() is Some((id, coef)) {
-        let fallback_name = "x_{id}";
-        let &var_name = var_names.get(&id).unwrap_or(&fallback_name);
+        let var_name = var_names.get(&id).unwrap_or("x_{id}");
         s ++= "{coef}*{var_name} ";
       }
       s ++= "{constant}";
@@ -42,7 +33,10 @@ pub mod Term {
     }
   }
 
-  pub fn .to_matrix_row(Term({coefficients, constant, var_names}), num_vars: N32) -> (List[F32], F32) {
+  pub fn .to_matrix_row(Term({ coefficients, constant, var_names }), num_vars: N32) -> (
+    List[F32],
+    F32,
+  ) {
     let coef_iter = coefficients.into_iter();
     let next_var = coef_iter.next();
     let var_index = 0;
@@ -66,24 +60,30 @@ pub mod Term {
     (row, -constant)
   }
 
-  pub fn .substitute_var(Term({coefficients, constant, var_names}), var_id: N32, substitute_with: Term) -> Term {
-    match coefficients.get(&var_id) {
+  pub fn .substitute_var(
+    Term({ coefficients, constant, var_names }),
+    var_id: N32,
+    substitute_with: Term,
+  ) -> Term {
+    match coefficients.at(&var_id) {
       Some(&coef) {
         let scaled_term = substitute_with * coef;
-        coef = 0.0;  // Remove the variable from original term
-        Term({coefficients, constant, var_names}) + scaled_term
+        // Remove the variable from original term
+        coef = 0.0;
+        Term({ coefficients, constant, var_names }) + scaled_term
       }
-      None {
-        Term({coefficients, constant, var_names})
-      }
+      None { Term({ coefficients, constant, var_names }) }
     }
   }
 
   pub impl add_term_term: Add[Term, Term, Term] {
-    fn .add(Term({coefficients: c1, constant: k1, var_names: v1}), Term({coefficients: c2, constant: k2, var_names: v2})) -> Term {
+    fn add(
+      Term({ coefficients: c1, constant: k1, var_names: v1 }),
+      Term({ coefficients: c2, constant: k2, var_names: v2 }),
+    ) -> Term {
       let c2_iter = c2.into_iter();
       while c2_iter.next() is Some((id, coef)) {
-        match c1.get(&id) {
+        match c1.at(&id) {
           Some(&c1_coef) {
             c1_coef += coef;
           }
@@ -96,43 +96,42 @@ pub mod Term {
       while v2_iter.next() is Some((id, name)) {
         v1.insert(id, name);
       }
-      Term({
-        coefficients: c1,
-        constant: k1 + k2,
-        var_names: v1,
-      })
+      Term({ coefficients: c1, constant: k1 + k2, var_names: v1 })
     }
   }
 
   pub impl add_term_var: Add[Term, Var, Term] {
-    fn .add(t1: Term, t2: Var) -> Term {
+    fn add(t1: Term, t2: Var) -> Term {
       t1 + t2 as Term
     }
   }
 
   pub impl add_var_term: Add[Var, Term, Term] {
-    fn .add(t1: Var, t2: Term) -> Term {
+    fn add(t1: Var, t2: Term) -> Term {
       t1 as Term + t2
     }
   }
 
   pub impl add_f32_term: Add[F32, Term, Term] {
-    fn .add(f: F32, t: Term) -> Term {
+    fn add(f: F32, t: Term) -> Term {
       f as Term + t
     }
   }
 
   pub impl add_term_f32: Add[Term, F32, Term] {
-    fn .add(t: Term, f: F32) -> Term {
+    fn add(t: Term, f: F32) -> Term {
       t + f as Term
     }
   }
 
   pub impl sub_term_term: Sub[Term, Term, Term] {
-    fn .sub(Term({coefficients: c1, constant: k1, var_names: v1}), Term({coefficients: c2, constant: k2, var_names: v2})) -> Term {
+    fn sub(
+      Term({ coefficients: c1, constant: k1, var_names: v1 }),
+      Term({ coefficients: c2, constant: k2, var_names: v2 }),
+    ) -> Term {
       let c2_iter = c2.into_iter();
       while c2_iter.next() is Some((id, coef)) {
-        match c1.get(&id) {
+        match c1.at(&id) {
           Some(&c1_coef) {
             c1_coef -= coef;
           }
@@ -145,64 +144,56 @@ pub mod Term {
       while v2_iter.next() is Some((id, name)) {
         v1.insert(id, name);
       }
-      Term({
-        coefficients: c1,
-        constant: k1 - k2,
-        var_names: v1,
-      })
+      Term({ coefficients: c1, constant: k1 - k2, var_names: v1 })
     }
   }
 
   pub impl sub_term_var: Sub[Term, Var, Term] {
-    fn .sub(t1: Term, t2: Var) -> Term {
+    fn sub(t1: Term, t2: Var) -> Term {
       t1 - t2 as Term
     }
   }
 
   pub impl sub_var_term: Sub[Var, Term, Term] {
-    fn .sub(t1: Var, t2: Term) -> Term {
+    fn sub(t1: Var, t2: Term) -> Term {
       t1 as Term - t2
     }
   }
 
   pub impl sub_f32_term: Sub[F32, Term, Term] {
-    fn .sub(f: F32, t: Term) -> Term {
+    fn sub(f: F32, t: Term) -> Term {
       f as Term - t
     }
   }
 
   pub impl sub_term_f32: Sub[Term, F32, Term] {
-    fn .sub(t: Term, f: F32) -> Term {
+    fn sub(t: Term, f: F32) -> Term {
       t - f as Term
     }
   }
 
   pub impl mul_f32_term: Mul[F32, Term, Term] {
-    fn .mul(f: F32, Term({coefficients, constant, var_names})) -> Term {
+    fn mul(f: F32, Term({ coefficients, constant, var_names })) -> Term {
       let c_iter = coefficients.iter();
       while c_iter.next() is Some(&(id, coef)) {
         coef *= f;
       }
-      Term({
-        coefficients: coefficients,
-        constant: constant * f,
-        var_names: var_names,
-      })
+      Term({ coefficients, constant: constant * f, var_names })
     }
   }
 
   pub impl mul_term_f32: Mul[Term, F32, Term] {
-    fn .mul(t: Term, f: F32) -> Term {
+    fn mul(t: Term, f: F32) -> Term {
       f * t
     }
   }
 
   pub impl neg_term: Neg[Term, Term] {
-    fn .neg(Term({coefficients, constant, var_names})) -> Term {
+    fn neg(Term({ coefficients, constant, var_names })) -> Term {
       Term({
         coefficients: coefficients.map_values(fn(c: F32) { -c }),
         constant: -constant,
-        var_names: var_names,
+        var_names,
       })
     }
   }

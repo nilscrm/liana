@@ -1,7 +1,8 @@
+
 mod liana = "../../src/liana.vi";
 
-use liana::linear_program::LinearProgram;
-use liana::constraint::Constraint;
+use liana::linear_program::{LinearProgram, Objective};
+use liana::constraint::{Constraint, ConstraintType::Le};
 use liana::term::Term;
 
 pub fn main(&io: &IO) {
@@ -9,15 +10,9 @@ pub fn main(&io: &IO) {
   let x = lp.new_var("x", 0.0, F32::inf);
   let y = lp.new_var("y", 0.0, F32::inf);
 
-  lp.add_constraint(Constraint::le(-1.0 * x + y, 1.0 as Term));
-  lp.set_objective(x + y);
-  
-  match lp.solve() {
-    Ok((sol_value, solution)) {
-      io.println("{sol_value}, {solution}");
-    }
-    Err(msg) {
-      io.println(msg);
-    }
-  }
+  lp.add_constraint(Constraint(-1.0 * x + y, Le, 1.0 as Term));
+  lp.set_objective(Objective::Maximize(x + y));
+
+  let solution = lp.solve();
+  io.println("{solution.show()}");
 }

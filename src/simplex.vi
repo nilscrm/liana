@@ -1,126 +1,79 @@
-use std::unicode::ToString;
+
 use liana::constraint::Constraint;
 use liana::term::Term;
+use liana::variable::VarId;
 
+use std::debug::Show;
+use std::ops::Cast;
 
-/// Represents a linear programming problem in tableau form
-struct Tableau(
-  // List of rows
-  // First row is the objective row
-  List[List[F32]],
-  // Right hand side
-  List[F32],
-  /// Number of original variables (excluding slack variables)
-  N32,
-  /// Maps the basic variable indices to their row indices in the tableau
-  List[N32],
-)
+// Represents a linear programming problem in tableau form
+pub.liana struct Tableau(pub {
+  objective_row: List[F32],
+  objective_constant: F32,
+  matrix_rows: List[List[F32]],
+  rhs: List[F32],
+  num_vars: N32,
+  basic_vars: List[VarId],
+});
 
-pub mod Tableau {
-  pub fn new(num_vars: N32, constraints: List[Constraint], objective: Term) -> Tableau {
-    let constraint_matrix = [];
-    let rhs = [];
-
-    let constraints_iter = constraints.iter();
-    while constraints_iter.next() is Some(&constraint) {
-      let (row, constant) = constraint.to_matrix_row(num_vars);
-      constraint_matrix.push_back(row);
-      rhs.push_back(constant);
-    }
-
-    let num_constraints = constraints.len();
-
-    // Add slack variables
-    let constraint_matrix_iter = constraint_matrix.iter();
-    let i = 0;
-    while constraint_matrix_iter.next() is Some(&row) {
-      let j = 0;
-      while j < num_constraints {
-        if j == i {
-          row.push_back(1.0);
-        } else {
-          row.push_back(0.0);
-        }
-        j += 1;
-      }
-      i += 1;
-    }
-
-    let (objective_row, objective_rhs) = objective.to_matrix_row(num_vars);
-    objective_row = objective_row.map(fn(x: F32) { -x });
-    objective_rhs = -objective_rhs;
-
-    // Add slack variables to objective row
-    let i = 0;
-    while i < num_constraints {
-      objective_row.push_back(0.0);
-      i += 1;
-    }
-    constraint_matrix.push_front(objective_row);
-    rhs.push_front(objective_rhs);
-
-    let basic_vars = [];
-    let i = 0;
-    while i < num_constraints {
-      basic_vars.push_back(num_vars + i);
-      i += 1;
-    }
-
-    Tableau(constraint_matrix, rhs, num_vars, basic_vars)
-  }
-
+pub.liana mod Tableau {
   /// Find the entering variable index using the most negative coefficient rule
-  pub fn .find_entering_var(&Tableau(matrix, _, _, _)) -> Option[N32] {
-    let &objective_row = matrix.get(0);
-
-    let min_coeff = 0.0;
+  fn .find_entering_var(&Tableau({
+    objective_row,
+    objective_constant,
+    matrix_rows,
+    rhs,
+    num_vars,
+    basic_vars,
+  })) -> Option[N32] {
+    let min_coef = 0.0;
     let entering_var = None;
 
     let objective_iter = objective_row.iter();
     let column_index = 0;
     while objective_iter.next() is Some(&obj_coef) {
-      if obj_coef < min_coeff {
-        min_coeff = obj_coef;
+      if obj_coef < min_coef {
+        min_coef = obj_coef;
         entering_var = Some(column_index);
       }
       column_index += 1;
     }
-
     entering_var
   }
 
   /// Find the leaving variable index using the minimum ratio test
-  pub fn .find_leaving_var(&Tableau(matrix, rhs, _, _), entering_var: N32) -> Option[N32] {
+  fn .find_leaving_var(
+    &Tableau({ objective_row, objective_constant, matrix_rows, rhs, num_vars, basic_vars }),
+    entering_var: N32,
+  ) -> Option[N32] {
+    let row_iter = matrix_rows.iter();
     let rhs_iter = rhs.iter();
-    let a_iter = matrix.iter();
 
-    // Skip objective row
-    let &_ = a_iter.next().unwrap();
-    let &_ = rhs_iter.next().unwrap();
-    let row_index = 1;
-
-    let min_ratio = 999999.0;
+    let row_index = 0;
+    let min_ratio = F32::inf;
     let leaving_row = None;
 
-    while a_iter.next() is Some(&row) {
-      let &coef = row.get(entering_var);
-      let &rhs_val = rhs_iter.next().unwrap();
+    while row_iter.next() is Some(&row) && rhs_iter.next() is Some(&rhs_val) {
+      let coef = row.get(entering_var).unwrap();
       if coef > 0.0 && (rhs_val / coef) < min_ratio {
         min_ratio = rhs_val / coef;
         leaving_row = Some(row_index);
       }
       row_index += 1;
     }
-
     leaving_row
   }
 
   /// Perform a pivot operation
-  pub fn .pivot(&Tableau(matrix, rhs, _, basic_vars), leaving_row_index: N32, entering_var: N32) {
-    let &leaving_row = matrix.get(leaving_row_index);
-    let &leaving_row_rhs = rhs.get(leaving_row_index);
+  fn .pivot(
+    &Tableau({ objective_row, objective_constant, matrix_rows, rhs, num_vars, basic_vars }),
+    leaving_row_index: N32,
+    entering_var: N32,
+  ) {
+    let &leaving_row = matrix_rows.at(leaving_row_index).unwrap();
+    let &leaving_row_rhs = rhs.at(leaving_row_index).unwrap();
 
-    let &pivot_element = leaving_row.get(entering_var);
+    let pivot_element = leaving_row.get(entering_var).unwrap();
 
     let leaving_row_iter = leaving_row.iter();
     while leaving_row_iter.next() is Some(&val) {
@@ -128,13 +81,12 @@ pub mod Tableau {
     }
     leaving_row_rhs /= pivot_element;
 
-    let a_iter = matrix.iter();
+    let row_iter = matrix_rows.iter();
     let rhs_iter = rhs.iter();
     let row_index = 0;
-    while a_iter.next() is Some(&row) {
-      let &rhs_val = rhs_iter.next().unwrap();
+    while row_iter.next() is Some(&row) && rhs_iter.next() is Some(&rhs_val) {
       if row_index != leaving_row_index {
-        let &scaling_factor = row.get(entering_var);
+        let scaling_factor = row.get(entering_var).unwrap();
         let row_iter = row.iter();
         let leaving_row_iter = leaving_row.iter();
         while row_iter.next() is Some(&val) {
@@ -145,52 +97,73 @@ pub mod Tableau {
       }
       row_index += 1;
     }
+    let scaling_factor = objective_row.get(entering_var).unwrap();
+    let objective_iter = objective_row.iter();
+    let leaving_row_iter = leaving_row.iter();
+    while objective_iter.next() is Some(&val) {
+      let &leaving_val = leaving_row_iter.next().unwrap();
+      val -= scaling_factor * leaving_val;
+    }
+    objective_constant -= scaling_factor * leaving_row_rhs;
 
-    let &basic_var_leaving = basic_vars.get(leaving_row_index - 1);
+    let &basic_var_leaving = basic_vars.at(leaving_row_index).unwrap();
     basic_var_leaving = entering_var;
   }
 
+  pub enum OptimizationResult {
+    Unbounded,
+    Solution({ value: F32, var_values: List[F32] }),
+  }
+
   /// Run the simplex method to solve the linear program
-  pub fn .solve(&self: &Tableau) -> Result[(F32, List[F32]), String] {
+  pub fn .solve(&self: &Tableau) -> OptimizationResult {
     loop {
       let entering_var = match self.find_entering_var() {
         Some(var) { var }
-        None { break; 0 }
+        None { break () }
       };
 
       let leaving_var = match self.find_leaving_var(entering_var) {
         Some(var) { var }
-        None { return Err("Unbounded"); 0 }
+        None { return OptimizationResult::Unbounded }
       };
 
       self.pivot(leaving_var, entering_var);
     }
 
-    Ok(self.extract_solution())
+    self.extract_solution()
   }
 
-  fn .extract_solution(&Tableau(matrix, rhs, num_vars, basic_vars)) -> (F32, List[F32]) {
-    // Solution value can be obtained from the right hand side of the objective row
+  fn .extract_solution(&Tableau({
+    objective_row,
+    objective_constant,
+    matrix_rows,
+    rhs,
+    num_vars,
+    basic_vars,
+  })) -> OptimizationResult {
     let rhs_iter = rhs.iter();
-    let &sol_value = rhs_iter.next().unwrap();
-
     let solution = List::new(num_vars, 0.0);
     let basic_vars_iter = basic_vars.iter();
-    while basic_vars_iter.next() is Some(&basic_var) {
-      let &val = rhs_iter.next().unwrap();
-      let &sol_place = solution.get(basic_var);
-      sol_place = val;
+    while basic_vars_iter.next() is Some(&basic_var) && rhs_iter.next() is Some(&val) {
+      if basic_var < num_vars && solution.at(basic_var) is Some(&sol_place) {
+        sol_place = val;
+      }
     }
 
-    (sol_value, solution)
+    OptimizationResult::Solution({ value: objective_constant, var_values: solution })
   }
 
-  // IMPORTANT: On the current main branch of Vine printing a list of lists (e.g. matrix) does not work.
-  // See https://discord.com/channels/1246152587883970662/1246156450875707556/1350791814210388039 for how to hotfix
-  // this in the Vine std.
-  pub impl to_string: ToString[Tableau] {
-    fn .to_string(Tableau(matrix, rhs, num_vars, basis)) -> String {
-      "A: {matrix}\n= {rhs}\nNum vars: {num_vars}\nBasis: {basis}"
+  pub impl show: Show[Tableau] {
+    fn show(&Tableau({ objective_row, objective_constant, matrix_rows, rhs, num_vars, basic_vars })) -> Show {
+      Show::Object([
+        (Show::Literal("objective_row"), objective_row.show()),
+        (Show::Literal("objective_constant"), objective_constant.show()),
+        (Show::Literal("matrix_rows"), matrix_rows.show()),
+        (Show::Literal("rhs"), rhs.show()),
+        (Show::Literal("num_vars"), num_vars.show()),
+        (Show::Literal("basic_vars"), basic_vars.show()),
+      ])
     }
   }
 }

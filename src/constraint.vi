@@ -1,41 +1,35 @@
-use std::unicode::ToString;
 
-pub struct Constraint {
-  lhs: Term,
-  rhs: Term,
+use std::ops::Cast;
+use liana::term::Term;
+
+pub enum ConstraintType {
+  Le,
+  Ge,
+  Eq,
 }
 
+pub struct Constraint(pub (Term, ConstraintType, Term));
+
 pub mod Constraint {
-  // TODO: Allow `Cast[T, Term]` as arguments once generic type inference becomes good enough
-  pub fn le(lhs: Term, rhs: Term) -> Constraint {
-    Constraint({
-      lhs: lhs,
-      rhs: rhs,
-    })
+  pub fn .substitute_var(
+    Constraint((lhs, constraint_type, rhs)),
+    var_id: N32,
+    substitute_with: Term,
+  ) -> Constraint {
+    Constraint((
+      lhs.substitute_var(var_id, substitute_with),
+      constraint_type,
+      rhs.substitute_var(var_id, substitute_with),
+    ))
   }
 
-  pub fn ge(lhs: Term, rhs: Term) -> Constraint {
-    Constraint({
-      lhs: rhs,
-      rhs: lhs,
-    })
-  }
-
-  pub impl toString: ToString[Constraint] {
-    fn .to_string(Constraint({lhs, rhs})) -> String {
-      "{lhs} <= {rhs}"
+  pub impl toString: Cast[Constraint, String] {
+    fn cast(Constraint((lhs, constraint_type, rhs))) -> String {
+      match constraint_type {
+        ConstraintType::Le { "{lhs} <= {rhs}" }
+        ConstraintType::Ge { "{lhs} >= {rhs}" }
+        ConstraintType::Eq { "{lhs} = {rhs}" }
+      }
     }
-  }
-
-  pub fn .to_matrix_row(Constraint({lhs, rhs}), num_vars: N32) -> (List[F32], F32) {
-    let term = lhs - rhs;
-    term.to_matrix_row(num_vars)
-  }
-
-  pub fn .substitute_var(Constraint({lhs, rhs}), var_id: N32, substitute_with: Term) -> Constraint {
-    Constraint({
-      lhs: lhs.substitute_var(var_id, substitute_with),
-      rhs: rhs.substitute_var(var_id, substitute_with),
-    })
   }
 }

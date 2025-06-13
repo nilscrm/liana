@@ -1,0 +1,27 @@
+
+mod liana = "../src/liana.vi";
+
+use std::data::Map;
+use std::ops::Cast;
+
+use liana::mps_parser::MpsParser;
+
+pub fn main(&io: &IO) {
+  let mps_data = match MpsParser::parse(&io) {
+    Ok(mps_data) { mps_data }
+    Err(error) {
+      io.println("Error parsing file: {error}");
+      return ()
+    }
+  };
+  let lp = match mps_data.to_linear_program() {
+    Ok(lp) { lp }
+    Err(error) {
+      io.println("Error converting MPS data to LP: {error}");
+      return ()
+    }
+  };
+
+  let solution = lp.solve();
+  io.println("{solution.show()}");
+}

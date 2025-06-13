@@ -1,88 +1,81 @@
+
 use liana::term::Term;
 
 use std::data::Map;
-use std::ops::arithmetic::{Add, Sub, Mul, Neg};
+use std::ops::arithmetic::{Add, Mul, Neg, Sub};
 use std::ops::Cast;
-use std::unicode::ToString;
 
-struct Var {
-  id: N32,
-  name: String,
-  lower_bound: F32,
-  upper_bound: F32,
-}
+pub.liana type VarId = N32;
+
+pub.liana struct Var(pub { id: VarId, name: String, lower_bound: F32, upper_bound: F32 });
 
 pub mod Var {
   pub impl toTerm: Cast[Var, Term] {
-    fn .cast(Var({id, name, lower_bound, upper_bound})) -> Term {
+    fn cast(Var({ id, name, lower_bound, upper_bound })) -> Term {
       let coefficients = Map::empty[N32, F32];
       coefficients.insert(id, 1.0);
       let var_names = Map::empty[N32, String];
       var_names.insert(id, name);
-      Term({
-        coefficients: coefficients,
-        constant: 0.0,
-        var_names: var_names,
-      })
+      Term({ coefficients, constant: 0.0, var_names })
     }
   }
 
-  pub impl toString: ToString[Var] {
-    fn .to_string(Var({id, name, lower_bound, upper_bound})) -> String {
+  pub impl toString: Cast[Var, String] {
+    fn cast(Var({ id, name, lower_bound, upper_bound })) -> String {
       name
     }
   }
 
   pub impl add_var_var: Add[Var, Var, Term] {
-    fn .add(t1: Var, t2: Var) -> Term {
+    fn add(t1: Var, t2: Var) -> Term {
       t1 as Term + t2 as Term
     }
   }
 
   pub impl add_var_f32: Add[Var, F32, Term] {
-    fn .add(v: Var, f: F32) -> Term {
+    fn add(v: Var, f: F32) -> Term {
       v as Term + f as Term
     }
   }
 
   pub impl add_f32_var: Add[F32, Var, Term] {
-    fn .add(f: F32, v: Var) -> Term {
+    fn add(f: F32, v: Var) -> Term {
       f as Term + v as Term
     }
   }
 
   pub impl sub_var_var: Sub[Var, Var, Term] {
-    fn .sub(t1: Var, t2: Var) -> Term {
+    fn sub(t1: Var, t2: Var) -> Term {
       t1 as Term - t2 as Term
     }
   }
 
   pub impl sub_var_f32: Sub[Var, F32, Term] {
-    fn .sub(v: Var, f: F32) -> Term {
+    fn sub(v: Var, f: F32) -> Term {
       v as Term - f as Term
     }
   }
 
   pub impl sub_f32_var: Sub[F32, Var, Term] {
-    fn .sub(f: F32, v: Var) -> Term {
+    fn sub(f: F32, v: Var) -> Term {
       f as Term - v as Term
     }
   }
 
   pub impl mul_var_f32: Mul[Var, F32, Term] {
-    fn .mul(v: Var, f: F32) -> Term {
+    fn mul(v: Var, f: F32) -> Term {
       v as Term * f
     }
   }
 
   pub impl mul_f32_var: Mul[F32, Var, Term] {
-    fn .mul(f: F32, v: Var) -> Term {
+    fn mul(f: F32, v: Var) -> Term {
       f * v as Term
     }
   }
 
   pub impl neg_var: Neg[Var, Term] {
-    fn .neg(v: Var) -> Term {
+    fn neg(v: Var) -> Term {
       -(v as Term)
     }
   }
