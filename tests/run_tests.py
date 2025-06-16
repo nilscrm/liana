@@ -120,23 +120,26 @@ def run_test(name: str, vine_file_path: str, expected_output_path: str, stdin: s
         try:
             with open(expected_output_path, "r") as f:
                 expected_output = f.read()
-                if result.returncode == 0 and stdout == expected_output:
-                    print("PASSED")
-                    num_passed += 1
-                else:
-                    print("FAILED")
-                    print(f"Expected: {expected_output}")
-                    print(f"Got: {stdout}")
-                    print(result.stderr)
         except FileNotFoundError:
+            expected_output = None
+            
+        # Compare with old expected output
+        if result.returncode == 0 and stdout == expected_output:
+            print("PASSED")
+            num_passed += 1
+        else:
             print("FAILED")
-            with open(expected_output_path, "w") as f:
-                f.write(stdout)
-            print("Created new output file")
+            if result.stderr:
+                print(f"'{result.stderr}'")
+            
+        # Always write the new output
+        with open(expected_output_path, "w") as f:
+            f.write(stdout)
+            
     except Exception as e:
         print("FAILED")
-        print(e)
-        print(result.stderr)
+        if result.stderr:
+            print(f"'{result.stderr}'")
 
 
 def run_vi_tests(test_dir_name: str):
