@@ -1,11 +1,11 @@
 
-use std::ops::Cast;
-use liana::term::Term;
+use #root::ops::Cast;
+use term::Term;
 
-pub enum ConstraintType {
-  Le,
-  Ge,
-  Eq,
+pub enum* ConstraintType {
+  Le(),
+  Ge(),
+  Eq(),
 }
 
 pub struct Constraint(pub (Term, ConstraintType, Term));

@@ -52,55 +52,59 @@ pub mod LinearProgram {
     let vars_iter = vars.iter();
     while vars_iter.next() is Some(&var) {
       let Var({ id, name, lower_bound, upper_bound }) = var;
-      let (pos_var_id, neg_var_id, shift, substitute_with) = if lower_bound == F32::neg_inf && upper_bound == F32::inf {
-        // Unbounded variable needs to be split into two variables: x = x⁺ - x⁻
-        let pos_var_id = new_vars.len();
-        let pos_var = Var({
-          id: pos_var_id,
-          name: "{name}_pos",
-          lower_bound: 0.0,
-          upper_bound: F32::inf,
-        });
-        new_vars.push_back(pos_var);
-        let neg_var_id = new_vars.len();
-        let neg_var = Var({
-          id: neg_var_id,
-          name: "{name}_neg",
-          lower_bound: 0.0,
-          upper_bound: F32::inf,
-        });
-        new_vars.push_back(neg_var);
-        (Some(pos_var_id), Some(neg_var_id), 0.0, pos_var - neg_var)
-      } else if lower_bound != F32::neg_inf {
-        // Variable has a proper lower bound and thus only needs to be shifted
-        let shift = -lower_bound;
-        let pos_var_id = new_vars.len();
-        let var = Var({ id: pos_var_id, name: "{name}", lower_bound: 0.0, upper_bound: F32::inf });
-        let new_upper_bound = upper_bound + shift;
-        if new_upper_bound != F32::inf {
-          new_constraints.push_back(Constraint(
-            var as Term,
-            ConstraintType::Le,
-            new_upper_bound as Term,
-          ));
+      let (pos_var_id, neg_var_id, shift, substitute_with) = when {
+        lower_bound == F32::neg_inf and upper_bound == F32::inf {
+          // Unbounded variable needs to be split into two variables: x = x⁺ - x⁻
+          let pos_var_id = new_vars.len();
+          let pos_var = Var({
+            id: pos_var_id,
+            name: "{name}_pos",
+            lower_bound: 0.0,
+            upper_bound: F32::inf,
+          });
+          new_vars.push_back(pos_var);
+          let neg_var_id = new_vars.len();
+          let neg_var = Var({
+            id: neg_var_id,
+            name: "{name}_neg",
+            lower_bound: 0.0,
+            upper_bound: F32::inf,
+          });
+          new_vars.push_back(neg_var);
+          (Some(pos_var_id), Some(neg_var_id), 0.0, pos_var - neg_var)
         }
-        new_vars.push_back(var);
-        (Some(pos_var_id), None, shift, var - shift)
-      } else {
-        // Variable has no lower bound and thus must have an upper bound (because of first if)
-        // We multiply the variable by a -1 and proceed like in the case before
-        let new_lower_bound = -upper_bound;
-        let shift = -new_lower_bound;
-        let neg_var_id = new_vars.len();
-        let neg_var = Var({
-          id: neg_var_id,
-          name: "{name}_inv",
-          lower_bound: 0.0,
-          upper_bound: F32::inf,
-        });
-        new_vars.push_back(neg_var);
-        // We know there was no lower bound and so no need to add an additional constraints for an upper bound as in the previous case
-        (None, Some(neg_var_id), shift, (-neg_var) - shift)
+        lower_bound != F32::neg_inf {
+          // Variable has a proper lower bound and thus only needs to be shifted
+          let shift = -lower_bound;
+          let pos_var_id = new_vars.len();
+          let var = Var({ id: pos_var_id, name: "{name}", lower_bound: 0.0, upper_bound: F32::inf });
+          let new_upper_bound = upper_bound + shift;
+          if new_upper_bound != F32::inf {
+            new_constraints.push_back(Constraint(
+              var as Term,
+              ConstraintType::Le,
+              new_upper_bound as Term,
+            ));
+          }
+          new_vars.push_back(var);
+          (Some(pos_var_id), None, shift, var - shift)
+        }
+        _ {
+          // Variable has no lower bound and thus must have an upper bound (because of first if)
+          // We multiply the variable by a -1 and proceed like in the case before
+          let new_lower_bound = -upper_bound;
+          let shift = -new_lower_bound;
+          let neg_var_id = new_vars.len();
+          let neg_var = Var({
+            id: neg_var_id,
+            name: "{name}_inv",
+            lower_bound: 0.0,
+            upper_bound: F32::inf,
+          });
+          new_vars.push_back(neg_var);
+          // We know there was no lower bound and so no need to add an additional constraints for an upper bound as in the previous case
+          (None, Some(neg_var_id), shift, (-neg_var) - shift)
+        }
       };
 
       normalized_var_representations.insert(
@@ -132,8 +136,6 @@ pub mod LinearProgram {
     let (normalized_lp, normalized_var_representations) = self.normalize();
     let &vars = &self.vars;
     let { tableau, artificial_vars } = normalized_lp.tableau();
-
-    // io.println("Tableau: {tableau.show()}");
 
     // Solve the processed problem
     match tableau.solve() {
@@ -265,9 +267,9 @@ pub mod LinearProgram {
     }
   }
 
-  pub enum OptimizationResult {
-    Unbounded,
-    Infeasible,
+  pub enum* OptimizationResult {
+    Unbounded(),
+    Infeasible(),
     Solution({ value: F32, var_values: Map[String, F32] }),
   }
 

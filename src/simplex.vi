@@ -53,9 +53,9 @@ pub.liana mod Tableau {
     let min_ratio = F32::inf;
     let leaving_row = None;
 
-    while row_iter.next() is Some(&row) && rhs_iter.next() is Some(&rhs_val) {
+    while row_iter.next() is Some(&row) and rhs_iter.next() is Some(&rhs_val) {
       let coef = row.get(entering_var).unwrap();
-      if coef > 0.0 && (rhs_val / coef) < min_ratio {
+      if coef > 0.0 and (rhs_val / coef) < min_ratio {
         min_ratio = rhs_val / coef;
         leaving_row = Some(row_index);
       }
@@ -84,7 +84,7 @@ pub.liana mod Tableau {
     let row_iter = matrix_rows.iter();
     let rhs_iter = rhs.iter();
     let row_index = 0;
-    while row_iter.next() is Some(&row) && rhs_iter.next() is Some(&rhs_val) {
+    while row_iter.next() is Some(&row) and rhs_iter.next() is Some(&rhs_val) {
       if row_index != leaving_row_index {
         let scaling_factor = row.get(entering_var).unwrap();
         let row_iter = row.iter();
@@ -110,8 +110,8 @@ pub.liana mod Tableau {
     basic_var_leaving = entering_var;
   }
 
-  pub enum OptimizationResult {
-    Unbounded,
+  pub enum* OptimizationResult {
+    Unbounded(),
     Solution({ value: F32, var_values: List[F32] }),
   }
 
@@ -120,12 +120,16 @@ pub.liana mod Tableau {
     loop {
       let entering_var = match self.find_entering_var() {
         Some(var) { var }
-        None { break () }
+        None {
+          break ();
+        }
       };
 
       let leaving_var = match self.find_leaving_var(entering_var) {
         Some(var) { var }
-        None { return OptimizationResult::Unbounded }
+        None {
+          return OptimizationResult::Unbounded;
+        }
       };
 
       self.pivot(leaving_var, entering_var);
@@ -145,8 +149,8 @@ pub.liana mod Tableau {
     let rhs_iter = rhs.iter();
     let solution = List::new(num_vars, 0.0);
     let basic_vars_iter = basic_vars.iter();
-    while basic_vars_iter.next() is Some(&basic_var) && rhs_iter.next() is Some(&val) {
-      if basic_var < num_vars && solution.at(basic_var) is Some(&sol_place) {
+    while basic_vars_iter.next() is Some(&basic_var) and rhs_iter.next() is Some(&val) {
+      if basic_var < num_vars and solution.at(basic_var) is Some(&sol_place) {
         sol_place = val;
       }
     }
