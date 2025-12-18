@@ -124,31 +124,6 @@ pub mod MpsParser {
     (field1.trim(), field2.trim(), field3.trim(), field4.trim(), field5.trim(), field6.trim())
   }
 
-  fn parse_float_line(line: String, needs_name: Bool) -> Result[
-    (String, List[(String, F32)]), String;
-  ] {
-    let (_, row, column1, value1, column2, value2) = split_fields(line);
-    if needs_name and row.len() == 0 {
-      return Err("Missing row name in float line '{line}'");
-    }
-    if column1.len() == 0 {
-      return Err("Expected at least one column in float line '{line}'");
-    }
-    assert F32::parse(value1) is Some(value1) else {
-      return Err("Cannot parse first float value \"{value1}\" in float line '{line}'");
-    }
-
-    let items = [(column1, value1)];
-    if column2.len() != 0 {
-      assert F32::parse(value2) is Some(value2) else {
-        return Err("Cannot parse second float value \"{value2}\" in float line '{line}'");
-      }
-
-      items.push_back((column2, value2));
-    }
-    Ok((row, items))
-  }
-
   fn parse_name_line(line: String) -> Result[String, String] {
     let (_, _, name, _, _, _) = split_fields(line);
     if name.len() == 0 {

@@ -5,7 +5,6 @@ use term::Term;
 use variable::{Var, VarId};
 
 use #root::data::{Iterator::Fused, Map};
-use #root::ops::arithmetic::{Add, Mul, Sub};
 use #root::ops::Cast;
 use #root::debug::Show;
 
@@ -282,7 +281,7 @@ pub mod LinearProgram {
   }
 
   mod term {
-    pub fn .to_tableau_row(Term({ coefficients, constant, var_names }), num_vars: N32) -> (
+    pub fn .to_tableau_row(Term({ coefficients, constant, var_names: _ }), num_vars: N32) -> (
       List[F32],
       F32,
     ) {

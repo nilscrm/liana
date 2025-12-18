@@ -230,18 +230,18 @@ pub mod MpsData {
   }
 
   pub fn .to_linear_program(MpsData({
-    problem_name,
+    problem_name: _,
     objective_sense,
     rows,
     columns,
     rhs_entries,
-    range_entries,
+    range_entries: _,
     bound_entries,
   })) -> Result[LinearProgram, String] {
     let lp = LinearProgram::new();
 
-    let constraints = rows.filter(fn* (&RowDefinition({ row_type, name })) {
-      row_type != RowType::NonConstraining()
+    let constraints = rows.filter(fn* (&r: &RowDefinition) {
+      r.row_type != RowType::NonConstraining()
     });
 
     assert rows.find(fn* (&row: &RowDefinition) { row.row_type == RowType::NonConstraining() }) is Some(
@@ -255,7 +255,7 @@ pub mod MpsData {
     let var_lower_bounds = Map::empty[String, F32];
     let var_upper_bounds = Map::empty[String, F32];
 
-    for BoundEntry({ bound_type, bound_name, var_name, value }) in bound_entries {
+    for BoundEntry({ bound_type, bound_name: _, var_name, value }) in bound_entries {
       match bound_type {
         BoundType::Lower() {
           var_lower_bounds.insert(var_name, value.assume());
@@ -299,7 +299,7 @@ pub mod MpsData {
     }
 
     let rhs = Map::empty[String, F32];
-    for RhsEntry({ rhs_name, row_name, value }) in rhs_entries {
+    for RhsEntry({ rhs_name: _, row_name, value }) in rhs_entries {
       rhs.insert(row_name, value);
     }
 

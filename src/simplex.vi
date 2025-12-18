@@ -1,10 +1,7 @@
 
-use constraint::Constraint;
-use term::Term;
 use variable::VarId;
 
 use #root::debug::Show;
-use #root::ops::Cast;
 
 // Represents a linear programming problem in tableau form
 pub.liana struct* Tableau(pub {
@@ -18,19 +15,12 @@ pub.liana struct* Tableau(pub {
 
 pub.liana mod Tableau {
   /// Find the entering variable index using the most negative coefficient rule
-  fn .find_entering_var(&Tableau({
-    objective_row,
-    objective_constant,
-    matrix_rows,
-    rhs,
-    num_vars,
-    basic_vars,
-  })) -> Option[N32] {
+  fn .find_entering_var(&self: &Tableau) -> Option[N32] {
     let min_coef = 0.0;
     let entering_var = None();
 
     let column_index = 0;
-    for &obj_coef in &objective_row {
+    for &obj_coef in &self.objective_row {
       if obj_coef < min_coef {
         min_coef = obj_coef;
         entering_var = Some(column_index);
@@ -42,7 +32,14 @@ pub.liana mod Tableau {
 
   /// Find the leaving variable index using the minimum ratio test
   fn .find_leaving_var(
-    &Tableau({ objective_row, objective_constant, matrix_rows, rhs, num_vars, basic_vars }),
+    &Tableau({
+      objective_row: _,
+      objective_constant: _,
+      matrix_rows,
+      rhs,
+      num_vars: _,
+      basic_vars: _,
+    }),
     entering_var: N32,
   ) -> Option[N32] {
     let row_index = 0;
@@ -62,7 +59,7 @@ pub.liana mod Tableau {
 
   /// Perform a pivot operation
   fn .pivot(
-    &Tableau({ objective_row, objective_constant, matrix_rows, rhs, num_vars, basic_vars }),
+    &Tableau({ objective_row, objective_constant, matrix_rows, rhs, num_vars: _, basic_vars }),
     leaving_row_index: N32,
     entering_var: N32,
   ) {
@@ -126,9 +123,9 @@ pub.liana mod Tableau {
   }
 
   fn .extract_solution(&Tableau({
-    objective_row,
+    objective_row: _,
     objective_constant,
-    matrix_rows,
+    matrix_rows: _,
     rhs,
     num_vars,
     basic_vars,

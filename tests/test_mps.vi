@@ -1,7 +1,4 @@
 
-use #root::data::Map;
-use #root::ops::Cast;
-
 use #liana::mps_parser::MpsParser;
 
 pub fn main(&io: &IO) {
