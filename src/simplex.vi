@@ -1,13 +1,13 @@
 
-use liana::constraint::Constraint;
-use liana::term::Term;
-use liana::variable::VarId;
+use constraint::Constraint;
+use term::Term;
+use variable::VarId;
 
-use std::debug::Show;
-use std::ops::Cast;
+use #root::debug::Show;
+use #root::ops::Cast;
 
 // Represents a linear programming problem in tableau form
-pub.liana struct Tableau(pub {
+pub.liana struct* Tableau(pub {
   objective_row: List[F32],
   objective_constant: F32,
   matrix_rows: List[List[F32]],
@@ -27,11 +27,10 @@ pub.liana mod Tableau {
     basic_vars,
   })) -> Option[N32] {
     let min_coef = 0.0;
-    let entering_var = None;
+    let entering_var = None();
 
-    let objective_iter = objective_row.iter();
     let column_index = 0;
-    while objective_iter.next() is Some(&obj_coef) {
+    for &obj_coef in &objective_row {
       if obj_coef < min_coef {
         min_coef = obj_coef;
         entering_var = Some(column_index);
@@ -46,15 +45,12 @@ pub.liana mod Tableau {
     &Tableau({ objective_row, objective_constant, matrix_rows, rhs, num_vars, basic_vars }),
     entering_var: N32,
   ) -> Option[N32] {
-    let row_iter = matrix_rows.iter();
-    let rhs_iter = rhs.iter();
-
     let row_index = 0;
     let min_ratio = F32::inf;
-    let leaving_row = None;
+    let leaving_row = None();
 
-    while row_iter.next() is Some(&row) and rhs_iter.next() is Some(&rhs_val) {
-      let coef = row.get(entering_var).unwrap();
+    for (&row, &rhs_val) in matrix_rows.iter_ref().zip(rhs.iter_ref()) {
+      let coef = row.get(entering_var).assume();
       if coef > 0.0 and (rhs_val / coef) < min_ratio {
         min_ratio = rhs_val / coef;
         leaving_row = Some(row_index);
@@ -70,43 +66,34 @@ pub.liana mod Tableau {
     leaving_row_index: N32,
     entering_var: N32,
   ) {
-    let &leaving_row = matrix_rows.at(leaving_row_index).unwrap();
-    let &leaving_row_rhs = rhs.at(leaving_row_index).unwrap();
+    let &leaving_row = matrix_rows.at(leaving_row_index).assume();
+    let &leaving_row_rhs = rhs.at(leaving_row_index).assume();
 
-    let pivot_element = leaving_row.get(entering_var).unwrap();
+    let pivot_element = leaving_row.get(entering_var).assume();
 
-    let leaving_row_iter = leaving_row.iter();
-    while leaving_row_iter.next() is Some(&val) {
+    for &val in &leaving_row {
       val /= pivot_element;
     }
     leaving_row_rhs /= pivot_element;
 
-    let row_iter = matrix_rows.iter();
-    let rhs_iter = rhs.iter();
     let row_index = 0;
-    while row_iter.next() is Some(&row) and rhs_iter.next() is Some(&rhs_val) {
+    for (&row, &rhs_val) in matrix_rows.iter_ref().zip(rhs.iter_ref()) {
       if row_index != leaving_row_index {
-        let scaling_factor = row.get(entering_var).unwrap();
-        let row_iter = row.iter();
-        let leaving_row_iter = leaving_row.iter();
-        while row_iter.next() is Some(&val) {
-          let &leaving_val = leaving_row_iter.next().unwrap();
+        let scaling_factor = row.get(entering_var).assume();
+        for (&val, &leaving_val) in row.iter_ref().zip(leaving_row.iter_ref()) {
           val -= scaling_factor * leaving_val;
         }
         rhs_val -= scaling_factor * leaving_row_rhs;
       }
       row_index += 1;
     }
-    let scaling_factor = objective_row.get(entering_var).unwrap();
-    let objective_iter = objective_row.iter();
-    let leaving_row_iter = leaving_row.iter();
-    while objective_iter.next() is Some(&val) {
-      let &leaving_val = leaving_row_iter.next().unwrap();
+    let scaling_factor = objective_row.get(entering_var).assume();
+    for (&val, &leaving_val) in objective_row.iter_ref().zip(leaving_row.iter_ref()) {
       val -= scaling_factor * leaving_val;
     }
     objective_constant -= scaling_factor * leaving_row_rhs;
 
-    let &basic_var_leaving = basic_vars.at(leaving_row_index).unwrap();
+    let &basic_var_leaving = basic_vars.at(leaving_row_index).assume();
     basic_var_leaving = entering_var;
   }
 
@@ -120,15 +107,15 @@ pub.liana mod Tableau {
     loop {
       let entering_var = match self.find_entering_var() {
         Some(var) { var }
-        None {
+        None() {
           break ();
         }
       };
 
       let leaving_var = match self.find_leaving_var(entering_var) {
         Some(var) { var }
-        None {
-          return OptimizationResult::Unbounded;
+        None() {
+          return OptimizationResult::Unbounded();
         }
       };
 
@@ -146,10 +133,8 @@ pub.liana mod Tableau {
     num_vars,
     basic_vars,
   })) -> OptimizationResult {
-    let rhs_iter = rhs.iter();
     let solution = List::new(num_vars, 0.0);
-    let basic_vars_iter = basic_vars.iter();
-    while basic_vars_iter.next() is Some(&basic_var) and rhs_iter.next() is Some(&val) {
+    for (&basic_var, &val) in basic_vars.iter_ref().zip(rhs.iter_ref()) {
       if basic_var < num_vars and solution.at(basic_var) is Some(&sol_place) {
         sol_place = val;
       }

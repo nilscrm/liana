@@ -1,5 +1,5 @@
 
-use liana::mps::{
+use mps::{
   BoundEntry,
   BoundType,
   ColumnEntry,
@@ -34,7 +34,7 @@ pub mod MpsParser {
       bound_entries,
     }) = MpsData::new();
 
-    let current_section = MpsSection::Start;
+    let current_section = MpsSection::Start();
     let line_number = 0;
 
     while io.read_line() is Some(line) {
@@ -47,25 +47,25 @@ pub mod MpsParser {
       when {
         line.starts_with(&("NAME"; _)) {
           problem_name = parse_name_line(line).try;
-          current_section = MpsSection::Name;
+          current_section = MpsSection::Name();
         }
         line.starts_with(&("OBJSENSE"; _)) {
-          current_section = MpsSection::Objsense;
+          current_section = MpsSection::Objsense();
         }
         line.starts_with(&("ROWS"; _)) {
-          current_section = MpsSection::Rows;
+          current_section = MpsSection::Rows();
         }
         line.starts_with(&("COLUMNS"; _)) {
-          current_section = MpsSection::Columns;
+          current_section = MpsSection::Columns();
         }
         line.starts_with(&("RHS"; _)) {
-          current_section = MpsSection::Rhs;
+          current_section = MpsSection::Rhs();
         }
         line.starts_with(&("RANGES"; _)) {
-          current_section = MpsSection::Ranges;
+          current_section = MpsSection::Ranges();
         }
         line.starts_with(&("BOUNDS"; _)) {
-          current_section = MpsSection::Bounds;
+          current_section = MpsSection::Bounds();
         }
         line.starts_with(&("ENDATA"; _)) {
           return Ok(MpsData({
@@ -80,28 +80,28 @@ pub mod MpsParser {
         }
         _ {
           match current_section {
-            MpsSection::Start {
+            MpsSection::Start() {
               return Err("Expected NAME section but got '{line}'");
             }
-            MpsSection::Name {
+            MpsSection::Name() {
               return Err("Expected new section after the name section but got '{line}'");
             }
-            MpsSection::Objsense {
+            MpsSection::Objsense() {
               objective_sense = parse_objsense_line(line).try;
             }
-            MpsSection::Rows {
+            MpsSection::Rows() {
               rows.push_back(parse_row_line(line, line_number).try);
             }
-            MpsSection::Columns {
+            MpsSection::Columns() {
               columns ++= parse_column_line(line, line_number).try;
             }
-            MpsSection::Rhs {
+            MpsSection::Rhs() {
               rhs_entries ++= parse_rhs_line(line, line_number).try;
             }
-            MpsSection::Ranges {
+            MpsSection::Ranges() {
               range_entries ++= parse_ranges_line(line, line_number).try;
             }
-            MpsSection::Bounds {
+            MpsSection::Bounds() {
               bound_entries.push_back(parse_bounds_line(line, line_number).try);
             }
           }
@@ -160,8 +160,8 @@ pub mod MpsParser {
   fn parse_objsense_line(line: String) -> Result[ObjectiveSense, String] {
     line = line.trim();
     when {
-      line == "MIN" { Ok(ObjectiveSense::Minimize) }
-      line == "MAX" { Ok(ObjectiveSense::Maximize) }
+      line == "MIN" { Ok(ObjectiveSense::Minimize()) }
+      line == "MAX" { Ok(ObjectiveSense::Maximize()) }
       _ { Err("Invalid objective sense: expected 'MIN' or 'MAX'") }
     }
   }
@@ -169,10 +169,10 @@ pub mod MpsParser {
   fn parse_row_line(line: String, line_number: N32) -> Result[RowDefinition, String] {
     let (constraint, row_name, _, _, _, _) = split_fields(line);
     let row_type = when {
-      constraint == "N" { RowType::NonConstraining }
-      constraint == "E" { RowType::Equal }
-      constraint == "L" { RowType::LessEqual }
-      constraint == "G" { RowType::GreaterEqual }
+      constraint == "N" { RowType::NonConstraining() }
+      constraint == "E" { RowType::Equal() }
+      constraint == "L" { RowType::LessEqual() }
+      constraint == "G" { RowType::GreaterEqual() }
       _ {
         return Err("Invalid row line: expected constraint (N, E, L, G) but got '{constraint}' in line {
           line_number
@@ -254,12 +254,12 @@ pub mod MpsParser {
   fn parse_bounds_line(line: String, line_number: N32) -> Result[BoundEntry, String] {
     let (bound_type, name, variable, value, _, _) = split_fields(line);
     let bound_type = when {
-      bound_type == "LO" { BoundType::Lower }
-      bound_type == "UP" { BoundType::Upper }
-      bound_type == "FX" { BoundType::Fixed }
-      bound_type == "FR" { BoundType::Free }
-      bound_type == "MI" { BoundType::MinusInfinity }
-      bound_type == "PL" { BoundType::PlusInfinity }
+      bound_type == "LO" { BoundType::Lower() }
+      bound_type == "UP" { BoundType::Upper() }
+      bound_type == "FX" { BoundType::Fixed() }
+      bound_type == "FR" { BoundType::Free() }
+      bound_type == "MI" { BoundType::MinusInfinity() }
+      bound_type == "PL" { BoundType::PlusInfinity() }
       _ {
         return Err("Invalid bound type: expected (LO, UP, FX, FR, MI, PL) but got '{bound_type}' in line {
           line_number
@@ -269,17 +269,16 @@ pub mod MpsParser {
     if variable.len() == 0 {
       return Err("Missing variable name in bounds line {line_number}");
     }
-    let value = if bound_type is BoundType::Lower or bound_type is BoundType::Upper or bound_type is BoundType::Fixed {
+    let value = if bound_type is BoundType::Lower() or bound_type is BoundType::Upper() or bound_type is BoundType::Fixed() {
       assert F32::parse(value) is Some(value) else {
         return Err("Cannot parse float value \"{value}\" in bound line {line_number}");
       }
-
-      value
+      Some(value)
     } else {
       if value.len() != 0 {
         return Err("Expected empty value for bound type {bound_type.show()} in line {line_number}");
       }
-      None
+      None()
     };
 
     Ok(BoundEntry({ bound_name: name, bound_type, var_name: variable, value }))
