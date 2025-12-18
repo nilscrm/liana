@@ -117,6 +117,8 @@ pub.liana mod Tableau {
       };
 
       self.pivot(leaving_var, entering_var);
+
+      continue;
     }
 
     self.extract_solution()

@@ -165,8 +165,6 @@ pub mod LinearProgram {
     tableau: Tableau,
     artificial_vars: List[Var],
   } {
-    use term::to_tableau_row;
-
     let constraint_matrix = [];
     let rhs = [];
     let artificial_vars = [];
@@ -280,33 +278,31 @@ pub mod LinearProgram {
     }
   }
 
-  mod term {
-    pub fn .to_tableau_row(Term({ coefficients, constant, var_names: _ }), num_vars: N32) -> (
-      List[F32],
-      F32,
-    ) {
-      let coef_iter = Fused::new(coefficients.iter());
-      let next_var = coef_iter.next();
-      let var_index = 0;
-      let row = [];
-      while var_index < num_vars {
-        match next_var {
-          Some((id, coef)) {
-            if id == var_index {
-              row.push_back(coef);
-              next_var = coef_iter.next();
-            } else {
-              row.push_back(0.0);
-            }
-          }
-          None() {
+  pub fn .to_tableau_row(Term({ coefficients, constant, var_names: _ }), num_vars: N32) -> (
+    List[F32],
+    F32,
+  ) {
+    let coef_iter = Fused::new(coefficients.iter());
+    let next_var = coef_iter.next();
+    let var_index = 0;
+    let row = [];
+    while var_index < num_vars {
+      match next_var {
+        Some((id, coef)) {
+          if id == var_index {
+            row.push_back(coef);
+            next_var = coef_iter.next();
+          } else {
             row.push_back(0.0);
           }
         }
-        var_index += 1;
+        None() {
+          row.push_back(0.0);
+        }
       }
-      (row, -constant)
+      var_index += 1;
     }
+    (row, -constant)
   }
 }
 

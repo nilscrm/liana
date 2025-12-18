@@ -115,7 +115,7 @@ def run_test(
     print(f"  Running test {name}: ", end="")
     num_tests += 1
     try:
-        command = ["vine", "run", "--no-stats", vine_file_path]
+        command = ["vine", "run", "--no-stats", vine_file_path, "--lib", "src/liana.vi"]
         result = subprocess.run(
             command,
             stdin=stdin,
@@ -145,7 +145,7 @@ def run_test(
         with open(expected_output_path, "w") as f:
             f.write(stdout)
 
-    except Exception as e:
+    except Exception:
         print("FAILED")
         if result.stderr:
             print(f"'{result.stderr}'")
@@ -171,7 +171,7 @@ def run_mps_tests(test_dir_name: str):
         with open(f"tests/{test_dir_name}/{file}", "r") as test_input_file:
             run_test(
                 file,
-                f"tests/test_mps.vi",
+                "tests/test_mps.vi",
                 f"tests/outputs/{test_dir_name}/{file}.out",
                 stdin=test_input_file,
             )
