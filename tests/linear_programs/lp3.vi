@@ -1,17 +1,15 @@
 
-mod liana = "../../src/liana.vi";
-
-use liana::linear_program::{LinearProgram, Objective};
-use liana::constraint::{Constraint, ConstraintType::Le};
-use liana::term::Term;
+use #liana::linear_program::{LinearProgram, Objective};
+use #liana::constraint::{Constraint, ConstraintType::Le};
+use #liana::term::Term;
 
 pub fn main(&io: &IO) {
   let lp = LinearProgram::new();
   let x = lp.new_var("x", -3.0, F32::inf);
   let y = lp.new_var("y", -5.0, F32::inf);
 
-  lp.add_constraint(Constraint(x + 2.0 * y, Le, 8.0 as Term));
-  lp.add_constraint(Constraint(3.0 * x + 2.0 * y, Le, 12.0 as Term));
+  lp.add_constraint(Constraint(x + 2.0 * y, Le(), 8.0 as Term));
+  lp.add_constraint(Constraint(3.0 * x + 2.0 * y, Le(), 12.0 as Term));
 
   lp.set_objective(Objective::Maximize(3.0 * x - 4.0 * y));
 

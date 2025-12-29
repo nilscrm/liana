@@ -44,4 +44,4 @@ jobs:
       run: |
         python tests/run_tests.py
     - name: Make sure example.vi runs
-      run: vine run --no-stats src/example.vi
+      run: vine run --no-stats src/example.vi --lib src/liana.vi

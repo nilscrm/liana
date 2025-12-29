@@ -1,14 +1,14 @@
 
-use std::ops::Cast;
-use liana::term::Term;
+use #root::ops::Cast;
+use term::Term;
 
-pub enum ConstraintType {
-  Le,
-  Ge,
-  Eq,
+pub enum* ConstraintType {
+  Le(),
+  Ge(),
+  Eq(),
 }
 
-pub struct Constraint(pub (Term, ConstraintType, Term));
+pub struct* Constraint(pub (Term, ConstraintType, Term));
 
 pub mod Constraint {
   pub fn .substitute_var(
@@ -26,9 +26,9 @@ pub mod Constraint {
   pub impl toString: Cast[Constraint, String] {
     fn cast(Constraint((lhs, constraint_type, rhs))) -> String {
       match constraint_type {
-        ConstraintType::Le { "{lhs} <= {rhs}" }
-        ConstraintType::Ge { "{lhs} >= {rhs}" }
-        ConstraintType::Eq { "{lhs} = {rhs}" }
+        ConstraintType::Le() { "{lhs} <= {rhs}" }
+        ConstraintType::Ge() { "{lhs} >= {rhs}" }
+        ConstraintType::Eq() { "{lhs} = {rhs}" }
       }
     }
   }

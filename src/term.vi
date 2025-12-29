@@ -1,11 +1,10 @@
 
-use liana::variable::Var;
+use variable::Var;
 
-use std::ops::arithmetic::{Add, Mul, Neg, Sub};
-use std::ops::Cast;
-use std::data::Map;
+use #root::ops::{Cast, arithmetic::{Add, Mul, Neg, Sub}};
+use #root::data::{Iterator::Fused, Map};
 
-pub struct Term(pub { coefficients: Map[N32, F32], constant: F32, var_names: Map[N32, String] });
+pub struct* Term(pub { coefficients: Map[N32, F32], constant: F32, var_names: Map[N32, String] });
 
 pub mod Term {
   pub impl fromF32: Cast[F32, Term] {
@@ -23,9 +22,8 @@ pub mod Term {
   pub impl toString: Cast[Term, String] {
     fn cast(Term({ coefficients, constant, var_names })) -> String {
       let s = "";
-      let coefficients_iter = coefficients.into_iter();
-      while coefficients_iter.next() is Some((id, coef)) {
-        let var_name = var_names.get(&id).unwrap_or("x_{id}");
+      for (id, coef) in coefficients {
+        let var_name = var_names.get(&id).or_use("x_{id}");
         s ++= "{coef}*{var_name} ";
       }
       s ++= "{constant}";
@@ -33,11 +31,11 @@ pub mod Term {
     }
   }
 
-  pub fn .to_matrix_row(Term({ coefficients, constant, var_names }), num_vars: N32) -> (
+  pub fn .to_matrix_row(Term({ coefficients, constant, var_names: _ }), num_vars: N32) -> (
     List[F32],
     F32,
   ) {
-    let coef_iter = coefficients.into_iter();
+    let coef_iter = Fused::new(coefficients.iter());
     let next_var = coef_iter.next();
     let var_index = 0;
     let row = [];
@@ -51,7 +49,7 @@ pub mod Term {
             row.push_back(0.0);
           }
         }
-        None {
+        None() {
           row.push_back(0.0);
         }
       }
@@ -72,7 +70,7 @@ pub mod Term {
         coef = 0.0;
         Term({ coefficients, constant, var_names }) + scaled_term
       }
-      None { Term({ coefficients, constant, var_names }) }
+      None() { Term({ coefficients, constant, var_names }) }
     }
   }
 
@@ -81,19 +79,10 @@ pub mod Term {
       Term({ coefficients: c1, constant: k1, var_names: v1 }),
       Term({ coefficients: c2, constant: k2, var_names: v2 }),
     ) -> Term {
-      let c2_iter = c2.into_iter();
-      while c2_iter.next() is Some((id, coef)) {
-        match c1.at(&id) {
-          Some(&c1_coef) {
-            c1_coef += coef;
-          }
-          None {
-            c1.insert(id, coef);
-          }
-        }
+      for (id, coef) in c2 {
+        *c1.at_or_insert(id, 0.0) += coef
       }
-      let v2_iter = v2.into_iter();
-      while v2_iter.next() is Some((id, name)) {
+      for (id, name) in v2 {
         v1.insert(id, name);
       }
       Term({ coefficients: c1, constant: k1 + k2, var_names: v1 })
@@ -129,19 +118,10 @@ pub mod Term {
       Term({ coefficients: c1, constant: k1, var_names: v1 }),
       Term({ coefficients: c2, constant: k2, var_names: v2 }),
     ) -> Term {
-      let c2_iter = c2.into_iter();
-      while c2_iter.next() is Some((id, coef)) {
-        match c1.at(&id) {
-          Some(&c1_coef) {
-            c1_coef -= coef;
-          }
-          None {
-            c1.insert(id, -coef);
-          }
-        }
+      for (id, coef) in c2 {
+        *c1.at_or_insert(id, 0.0) -= coef;
       }
-      let v2_iter = v2.into_iter();
-      while v2_iter.next() is Some((id, name)) {
+      for (id, name) in v2 {
         v1.insert(id, name);
       }
       Term({ coefficients: c1, constant: k1 - k2, var_names: v1 })
@@ -174,8 +154,7 @@ pub mod Term {
 
   pub impl mul_f32_term: Mul[F32, Term, Term] {
     fn mul(f: F32, Term({ coefficients, constant, var_names })) -> Term {
-      let c_iter = coefficients.iter();
-      while c_iter.next() is Some(&(id, coef)) {
+      for &(_, coef) in &coefficients {
         coef *= f;
       }
       Term({ coefficients, constant: constant * f, var_names })
@@ -191,7 +170,7 @@ pub mod Term {
   pub impl neg_term: Neg[Term, Term] {
     fn neg(Term({ coefficients, constant, var_names })) -> Term {
       Term({
-        coefficients: coefficients.map_values(fn(c: F32) { -c }),
+        coefficients: coefficients.map_values(fn* (_: &N32, c: F32) { -c }),
         constant: -constant,
         var_names,
       })

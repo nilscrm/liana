@@ -1,17 +1,17 @@
 
-use liana::term::Term;
+use term::Term;
 
-use std::data::Map;
-use std::ops::arithmetic::{Add, Mul, Neg, Sub};
-use std::ops::Cast;
+use #root::data::Map;
+use #root::ops::arithmetic::{Add, Mul, Neg, Sub};
+use #root::ops::Cast;
 
 pub.liana type VarId = N32;
 
-pub.liana struct Var(pub { id: VarId, name: String, lower_bound: F32, upper_bound: F32 });
+pub struct* Var(pub.liana { id: VarId, name: String, lower_bound: F32, upper_bound: F32 });
 
 pub mod Var {
   pub impl toTerm: Cast[Var, Term] {
-    fn cast(Var({ id, name, lower_bound, upper_bound })) -> Term {
+    fn cast(Var({ id, name, lower_bound: _, upper_bound: _ })) -> Term {
       let coefficients = Map::empty[N32, F32];
       coefficients.insert(id, 1.0);
       let var_names = Map::empty[N32, String];
@@ -21,8 +21,8 @@ pub mod Var {
   }
 
   pub impl toString: Cast[Var, String] {
-    fn cast(Var({ id, name, lower_bound, upper_bound })) -> String {
-      name
+    fn cast(self: Var) -> String {
+      self.name
     }
   }
 

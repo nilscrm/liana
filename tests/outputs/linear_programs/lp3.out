@@ -1,1 +1,1 @@
-Solution({ optimal value: +42.00000, solution: Map({ "x": +7.33333, "y": -5.00000 }) })
+Solution({ optimal value: 4.2e1, solution: Map({ "x": 7.33333302, "y": -5.0 }) })
