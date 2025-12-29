@@ -170,7 +170,7 @@ pub mod Term {
   pub impl neg_term: Neg[Term, Term] {
     fn neg(Term({ coefficients, constant, var_names })) -> Term {
       Term({
-        coefficients: coefficients.map_values(fn* (c: F32) { -c }),
+        coefficients: coefficients.map_values(fn* (_: &N32, c: F32) { -c }),
         constant: -constant,
         var_names,
       })
