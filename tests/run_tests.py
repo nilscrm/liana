@@ -115,7 +115,14 @@ def run_test(
     print(f"  Running test {name}: ", end="")
     num_tests += 1
     try:
-        command = ["vine", "run", "--no-stats", vine_file_path, "--lib", "src/liana.vi"]
+        command = [
+            "vine",
+            "run",
+            "--no-stats",
+            vine_file_path,
+            "--lib",
+            "liana/liana.vi",
+        ]
         result = subprocess.run(
             command,
             stdin=stdin,

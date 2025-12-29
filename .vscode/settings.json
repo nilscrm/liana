@@ -3,10 +3,10 @@
     "editor.defaultFormatter": "dprint.dprint"
   },
   "vine.entrypoints": [
-    "src/liana.vi",
+    "liana/liana.vi",
     "tests/linear_programs/*.vi",
     "tests/*.vi",
-    "src/example.vi",
+    "liana/example.vi",
   ],
   "rust-analyzer.check.command": "clippy",
   "editor.formatOnSave": true,
