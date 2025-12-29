@@ -32,18 +32,19 @@ let solution = lp.solve();
 You can also run this example with
 
 ```bash
-vine run src/example.vi --lib src/example
+vine run liana/example.vi --lib liana/liana.vi
 ```
 
 ## Structure
 
-- [`constraint.vi`](./src/constraint.vi): Represents a single linear constraint
-- [`example.vi`](./src/example.vi): Contains the example linear program shown
+- [`constraint.vi`](./liana/constraint.vi): Represents a single linear
+  constraint
+- [`example.vi`](./liana/example.vi): Contains the example linear program shown
   above
-- [`linear_program`](./src/linear_program.vi): Main struct to define linear
+- [`linear_program`](./liana/linear_program.vi): Main struct to define linear
   programs
-- [`simplex.vi`](./src/simplex.vi): Contains the implementation of the simplex
+- [`simplex.vi`](./liana/simplex.vi): Contains the implementation of the simplex
   method for solving linear programs
-- [`term.vi`](./src/term.vi): Linear making up constraints and objective
+- [`term.vi`](./liana/term.vi): Linear making up constraints and objective
   functions with a custom DSL
-- [`variable.vi`](./src/variable.vi): Variables used in terms
+- [`variable.vi`](./liana/variable.vi): Variables used in terms
