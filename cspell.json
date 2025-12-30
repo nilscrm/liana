@@ -3,7 +3,14 @@
   "version": "0.2",
   "words": [
     "coef",
+    "dont",
+    "fileset",
+    "nixfmt",
+    "nixos",
+    "nixpkgs",
+    "numtide",
     "OBJSENSE",
+    "pkgs",
     "println",
     "repr"
   ],

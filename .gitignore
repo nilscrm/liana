@@ -1,5 +1,6 @@
 .DS_Store
 target
+result
 
 .vscode/*
 !.vscode/settings.json
