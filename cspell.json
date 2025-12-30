@@ -5,6 +5,7 @@
     "coef",
     "dont",
     "fileset",
+    "nixbuild",
     "nixfmt",
     "nixos",
     "nixpkgs",
