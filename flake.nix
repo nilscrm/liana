@@ -11,7 +11,13 @@
   };
 
   outputs =
-    { self, nixpkgs, flake-utils, vine, ... }:
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      vine,
+      ...
+    }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -24,7 +30,12 @@
         lianaSrc = ./liana;
 
         liana = pkgs.runCommand "liana" { } ''
-          cp -r ${fileset.toSource { root = ./.; fileset = lianaSrc; }} $out
+          cp -r ${
+            fileset.toSource {
+              root = ./.;
+              fileset = lianaSrc;
+            }
+          } $out
         '';
       in
       {
@@ -37,7 +48,13 @@
         checks = {
           tests = pkgs.stdenvNoCC.mkDerivation {
             name = "liana-tests";
-            src = fileset.toSource { root = ./.; fileset = fileset.unions [ lianaSrc ./tests ]; };
+            src = fileset.toSource {
+              root = ./.;
+              fileset = fileset.unions [
+                lianaSrc
+                ./tests
+              ];
+            };
             nativeBuildInputs = [
               python
               vineCli
@@ -50,7 +67,13 @@
 
           example = pkgs.stdenvNoCC.mkDerivation {
             name = "liana-example";
-            src = fileset.toSource { root = ./.; fileset = fileset.unions [ lianaSrc ./example.vi ]; };
+            src = fileset.toSource {
+              root = ./.;
+              fileset = fileset.unions [
+                lianaSrc
+                ./example.vi
+              ];
+            };
             nativeBuildInputs = [
               vineCli
             ];
