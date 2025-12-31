@@ -37,11 +37,20 @@
             }
           } $out
         '';
+
+        liana-test-src = pkgs.runCommand "liana-test-src" { } ''
+          cp -r ${
+            fileset.toSource {
+              root = ./.;
+              fileset = ./tests;
+            }
+          }/tests $out
+        '';
       in
       {
         formatter = pkgs.nixfmt-tree;
         packages = {
-          inherit liana;
+          inherit liana liana-test-src;
           default = liana;
         };
 
