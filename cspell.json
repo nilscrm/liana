@@ -13,7 +13,8 @@
     "OBJSENSE",
     "pkgs",
     "println",
-    "repr"
+    "repr",
+    "stdenv"
   ],
   "useGitignore": true
 }
