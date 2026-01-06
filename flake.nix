@@ -26,33 +26,9 @@
         vineCli = vine.packages.${system}.vine;
 
         inherit (pkgs.lib) fileset;
-
-        lianaSrc = ./liana;
-
-        liana = pkgs.runCommand "liana" { } ''
-          cp -r ${
-            fileset.toSource {
-              root = ./.;
-              fileset = lianaSrc;
-            }
-          } $out
-        '';
-
-        liana-test-src = pkgs.runCommand "liana-test-src" { } ''
-          cp -r ${
-            fileset.toSource {
-              root = ./.;
-              fileset = ./tests;
-            }
-          }/tests $out
-        '';
       in
       {
         formatter = pkgs.nixfmt-tree;
-        packages = {
-          inherit liana liana-test-src;
-          default = liana;
-        };
 
         checks = {
           tests = pkgs.stdenvNoCC.mkDerivation {
@@ -60,7 +36,7 @@
             src = fileset.toSource {
               root = ./.;
               fileset = fileset.unions [
-                lianaSrc
+                ./liana
                 ./tests
               ];
             };
@@ -68,10 +44,8 @@
               python
               vineCli
             ];
-            buildPhase = ''
-              python3 tests/run_tests.py
-              touch $out
-            '';
+            buildPhase = "python3 tests/run_tests.py";
+            installPhase = "touch $out";
           };
 
           example = pkgs.stdenvNoCC.mkDerivation {
@@ -79,17 +53,15 @@
             src = fileset.toSource {
               root = ./.;
               fileset = fileset.unions [
-                lianaSrc
+                ./liana
                 ./example.vi
               ];
             };
             nativeBuildInputs = [
               vineCli
             ];
-            buildPhase = ''
-              vine run --no-stats ./example.vi --lib liana/liana.vi
-              touch $out
-            '';
+            buildPhase = "vine run --no-stats ./example.vi --lib liana/liana.vi";
+            installPhase = "touch $out";
           };
         };
 

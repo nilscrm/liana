@@ -13,8 +13,5 @@ jobs:
       - name: Nix Format Check
         run: nix fmt -- --ci
 
-      - name: Build
-        run: nix build
-
       - name: Run CI
         run: nix flake check
