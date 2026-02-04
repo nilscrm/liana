@@ -121,7 +121,7 @@ def run_test(
             "--no-stats",
             vine_file_path,
             "--lib",
-            "liana/liana.vi",
+            "liana",
         ]
         result = subprocess.run(
             command,
