@@ -2,12 +2,9 @@
   description = "Liana: Vine linear program solver";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.follows = "vine/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
-    vine = {
-      url = "github:VineLang/vine";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    vine.url = "github:VineLang/vine/dev";
   };
 
   outputs =
@@ -60,7 +57,7 @@
             nativeBuildInputs = [
               vineCli
             ];
-            buildPhase = "vine run --no-stats ./example.vi --lib liana/liana.vi";
+            buildPhase = "vine run --no-stats example.vi --lib liana";
             installPhase = "touch $out";
           };
         };

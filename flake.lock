@@ -111,11 +111,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1766902085,
-        "narHash": "sha256-coBu0ONtFzlwwVBzmjacUQwj3G+lybcZ1oeNSQkgC0M=",
+        "lastModified": 1762977756,
+        "narHash": "sha256-4PqRErxfe+2toFJFgcRKZ0UI9NSIOJa+7RXVtBhy4KE=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "c0b0e0fddf73fd517c3471e546c0df87a42d53f4",
+        "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
         "type": "github"
       },
       "original": {
@@ -128,7 +128,10 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs",
+        "nixpkgs": [
+          "vine",
+          "nixpkgs"
+        ],
         "vine": "vine"
       }
     },
@@ -261,23 +264,22 @@
         "crane": "crane",
         "flake-utils": "flake-utils_2",
         "hyptyp": "hyptyp",
-        "nixpkgs": [
-          "nixpkgs"
-        ],
+        "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay",
         "typix": "typix",
         "typsitter": "typsitter"
       },
       "locked": {
-        "lastModified": 1766781175,
-        "narHash": "sha256-D9W9eoXbrn1Q/0S09PavDtD2TnXMbWTu/UkNeSkBW+Q=",
+        "lastModified": 1770224883,
+        "narHash": "sha256-befKtA/ef9wtT58S3WNwQVfB8ehtFSg3O4TYK6KrPgM=",
         "owner": "VineLang",
         "repo": "vine",
-        "rev": "7f44cc5de52a13d6272d6314560d2de5a5a34ff7",
+        "rev": "26197a63dbe2c820fba651578d568676e60fdf5a",
         "type": "github"
       },
       "original": {
         "owner": "VineLang",
+        "ref": "dev",
         "repo": "vine",
         "type": "github"
       }
