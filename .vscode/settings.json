@@ -3,7 +3,7 @@
     "editor.defaultFormatter": "dprint.dprint"
   },
   "vine.entrypoints": [
-    "liana/liana.vi",
+    "liana",
     "tests/linear_programs/*.vi",
     "tests/*.vi",
     "example.vi",
