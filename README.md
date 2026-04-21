@@ -32,7 +32,7 @@ let solution = lp.solve();
 You can also run this example with
 
 ```bash
-vine run liana/example.vi --lib liana/liana.vi
+vine run example.vi --lib liana
 ```
 
 ## Structure
